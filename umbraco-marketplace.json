@@ -1,0 +1,32 @@
+﻿{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Category": "Backoffice Extensions",
+  "Title": "uTPro Simple Form Builder",
+  "Description": "Lightweight form builder for Umbraco 16+ backoffice. Create, manage, and render dynamic forms with 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language support, custom field extensibility, entry storage, and public submit/render APIs. Render any form with a single ViewComponent call.",
+  "AuthorDetails": {
+    "Name": "T4VN",
+    "Url": "https://t4vn.com",
+    "ImageUrl": "https://github.com/t4vn.png",
+    "SyncContributorsFromRepository": true
+  },
+  "PackagesByAuthor": [
+    "uTPro.Feature.FileManager",
+    "uTPro.Feature.AuditLog"
+  ],
+  "Screenshots": [],
+  "LicenseTypes": [
+    "Free"
+  ],
+  "Tags": [
+    "form",
+    "form-builder",
+    "forms",
+    "backoffice",
+    "validation",
+    "dynamic-forms"
+  ],
+  "LookingForContributors": true,
+  "PackageType": "Package",
+  "DocumentationUrl": "https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder",
+  "IssueTrackerUrl": "https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/issues"
+}

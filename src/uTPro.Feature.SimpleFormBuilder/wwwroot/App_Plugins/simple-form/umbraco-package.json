@@ -1,0 +1,31 @@
+{
+  "name": "uTPro.SimpleForm",
+  "version": "1.0.0",
+  "extensions": [
+    {
+      "type": "dashboard",
+      "alias": "uTPro.SimpleForm.Dashboard",
+      "name": "Simple Form Builder",
+      "element": "/App_Plugins/simple-form/index.js",
+      "elementName": "utpro-simple-form-dashboard",
+      "weight": 15,
+      "meta": {
+        "label": "#simpleForm_title",
+        "pathname": "simple-form"
+      },
+      "conditions": [
+        {
+          "alias": "Umb.Condition.SectionAlias",
+          "match": "Umb.Section.Settings"
+        }
+      ]
+    },
+    {
+      "type": "localization",
+      "alias": "uTPro.SimpleForm.Localize.EnUS",
+      "name": "Simple Form English",
+      "js": "/App_Plugins/simple-form/lang/en-us.js",
+      "meta": { "culture": "en-US" }
+    }
+  ]
+}

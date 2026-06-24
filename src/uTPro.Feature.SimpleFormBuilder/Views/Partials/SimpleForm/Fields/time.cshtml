@@ -1,0 +1,17 @@
+@* Time picker *@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+}
+
+@h.Label()
+<input type="time"
+       id="@h.FieldId"
+       name="@h.Name"
+       value="@Model.DefaultValue"
+       @h.RequiredAttr()
+       @h.OptionalAttr("min", h.Attr("min"))
+       @h.OptionalAttr("max", h.Attr("max"))
+       @h.DataMsgAttr() />
+@h.Error()

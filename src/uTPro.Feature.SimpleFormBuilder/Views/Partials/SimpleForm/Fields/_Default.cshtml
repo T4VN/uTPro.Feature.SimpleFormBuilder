@@ -1,0 +1,47 @@
+@* ═══════════════════════════════════════════════════════════════
+    DEFAULT FIELD PARTIAL — handles: text, email, tel, number, date, url, password
+    
+    To add a CUSTOM field type, create a new file in this folder:
+      Fields/{YourType}.cshtml  (e.g. Fields/turnstile.cshtml)
+    It receives:
+      @model FormFieldViewModel
+      ViewData["FormId"]            — the form element id
+      ViewData["CultureDictionary"] — ICultureDictionary for multi-language lookups
+    
+    Use FieldHelper for consistent rendering:
+      @{ var h = new FieldHelper(Model, ViewData); }
+      @h.Label()           — <label> with required marker
+      @h.Error()           — <span class="sf-error">
+      @h.FieldId           — unique field id
+      @h.RequiredAttr()    — "required" or ""
+      @h.PatternAttr()     — pattern="..." or ""
+      @h.DataMsgAttr()     — data-msg="..."
+      @h.Attr("key","def") — read from Field.Attributes
+      @h.OptionalAttr("min","5") — min="5" or ""
+    
+    MULTI-LANGUAGE: ValidationMessage supports {{DictionaryKey}} syntax.
+═══════════════════════════════════════════════════════════════ *@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+}
+
+@if (Model.Type != "hidden")
+{
+    @h.Label()
+}
+
+<input type="@Model.Type"
+       id="@h.FieldId"
+       name="@h.Name"
+       placeholder="@Model.Placeholder"
+       value="@Model.DefaultValue"
+       @h.RequiredAttr()
+       @h.PatternAttr()
+       @h.OptionalAttr("min", h.Attr("min"))
+       @h.OptionalAttr("max", h.Attr("max"))
+       @h.OptionalAttr("step", h.Attr("step"))
+       @h.OptionalAttr("accept", h.Attr("accept"))
+       @h.DataMsgAttr() />
+@h.Error()

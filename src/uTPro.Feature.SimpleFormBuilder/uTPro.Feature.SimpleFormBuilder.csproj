@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+
+    <!-- NuGet package metadata -->
+    <PackageId>uTPro.Feature.SimpleFormBuilder</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>T4VN</Authors>
+    <Company>T4VN</Company>
+    <Description>Lightweight form builder for Umbraco 16+ - create, manage, and render dynamic forms from the backoffice. Supports 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language, and custom field extensibility.</Description>
+    <PackageTags>umbraco;umbraco-marketplace;form;form-builder;umbraco-plugin;cms</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>..\..\Build</PackageOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms" Version="16.*" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="9.*" />
+  </ItemGroup>
+
+  <!-- Include README, icon and marketplace manifest in the NuGet package -->
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\umbraco-marketplace.json" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

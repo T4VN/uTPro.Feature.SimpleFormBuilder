@@ -1,0 +1,26 @@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+}
+
+@h.LabelNoFor()
+<div class="sf-options">
+    @if (Model.Options != null)
+    {
+        @foreach (var opt in Model.Options)
+        {
+            var radioId = h.FieldId + "-" + opt.Value;
+            <label class="sf-option">
+                <input type="radio"
+                       id="@radioId"
+                       name="@h.Name"
+                       value="@opt.Value"
+                       checked="@(opt.Value == Model.DefaultValue)"
+                       @h.RequiredAttr() />
+                @opt.Text
+            </label>
+        }
+    }
+</div>
+@h.Error()

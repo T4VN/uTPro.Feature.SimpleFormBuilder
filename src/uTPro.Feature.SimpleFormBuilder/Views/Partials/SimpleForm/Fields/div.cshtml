@@ -1,0 +1,10 @@
+@* Content Block — renders raw HTML from DefaultValue.
+   Use for headings, paragraphs, instructions, or any custom HTML within the form. *@
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+
+@if (!string.IsNullOrEmpty(Model.DefaultValue))
+{
+    <div class="sf-content-block @(Model.CssClass ?? "")">
+        @Html.Raw(Model.DefaultValue)
+    </div>
+}

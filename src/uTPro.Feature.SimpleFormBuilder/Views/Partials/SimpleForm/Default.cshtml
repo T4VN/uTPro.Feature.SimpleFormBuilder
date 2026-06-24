@@ -1,0 +1,73 @@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@using Umbraco.Cms.Core.Dictionary
+@using Microsoft.Extensions.DependencyInjection
+@model uTPro.Feature.SimpleFormBuilder.Models.FormViewModel
+@inject ICultureDictionary CultureDictionary
+@{
+    var formId = "sf-" + Model.Alias;
+    var cssClass = ViewBag.FormCssClass as string ?? "";
+    var btnText = ViewBag.SubmitBtnText as string ?? "SEND";
+    var showReset = ViewBag.ShowReset as bool? ?? true;
+    var resetText = ViewBag.ResetBtnText as string ?? "RESET";
+
+    // Shared ViewData passed to every field partial
+    var fieldViewData = new ViewDataDictionary(ViewData)
+    {
+        { "FormId", formId },
+        { "CultureDictionary", CultureDictionary }
+    };
+}
+
+<form id="@formId" class="sf @cssClass" novalidate
+      data-alias="@Model.Alias"
+      data-redirect="@(Model.RedirectUrl ?? "")"
+      data-btn-text="@btnText">
+    <input type="hidden" name="__alias" value="@Model.Alias" />
+
+    @foreach (var group in (Model.Groups ?? []).OrderBy(g => g.SortOrder))
+    {
+        <fieldset class="sf-group @(group.CssClass ?? "")">
+            @if (!string.IsNullOrWhiteSpace(group.Name))
+            {
+                <legend class="sf-group-title">@group.Name</legend>
+            }
+            <div class="row">
+                @foreach (var col in group.Columns)
+                {
+                    <div class="col-@(Math.Clamp(col.Width, 1, 12)) col-12-small">
+                        @foreach (var field in col.Fields.OrderBy(f => f.SortOrder))
+                        {
+                            if (field.IsHidden) { continue; }
+                            <div class="sf-group-field @(field.CssClass ?? "")">
+                                @await Html.PartialAsync(
+                                    FieldPartialResolver.Resolve(field.Type, ViewContext),
+                                    field,
+                                    fieldViewData)
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </fieldset>
+    }
+
+    <div class="col-12">
+        <ul class="actions">
+            <li><button type="submit" class="style1">@btnText</button></li>
+            @if (showReset)
+            {
+                <li><button type="reset" class="style2">@resetText</button></li>
+            }
+        </ul>
+    </div>
+    <div class="sf-message" style="display:none;"></div>
+</form>
+
+@if (Context.Items["sf-assets-loaded"] is not true)
+{
+    Context.Items["sf-assets-loaded"] = true;
+    uTPro.Feature.SimpleFormBuilder.Helpers.SimpleFormAssets.Resolve(
+        Context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>());
+    <link rel="stylesheet" href="@Url.Content("~" + uTPro.Feature.SimpleFormBuilder.Helpers.SimpleFormAssets.Css)" />
+    <script src="@Url.Content("~" + uTPro.Feature.SimpleFormBuilder.Helpers.SimpleFormAssets.Js)"></script>
+}

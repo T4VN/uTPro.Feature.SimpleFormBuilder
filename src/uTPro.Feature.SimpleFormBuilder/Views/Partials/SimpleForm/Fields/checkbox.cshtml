@@ -1,0 +1,28 @@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+}
+
+@if (Model.Options != null && Model.Options.Any())
+{
+    @h.LabelNoFor()
+    <div class="sf-options">
+        @foreach (var opt in Model.Options)
+        {
+            var cbId = h.FieldId + "-" + opt.Value;
+            <label class="sf-option">
+                <input type="checkbox" id="@cbId" name="@h.Name" value="@opt.Value" />
+                @opt.Text
+            </label>
+        }
+    </div>
+}
+else
+{
+    <label class="sf-option">
+        <input type="checkbox" id="@h.FieldId" name="@h.Name" value="true" />
+        @Model.Label
+    </label>
+}
+@h.Error()

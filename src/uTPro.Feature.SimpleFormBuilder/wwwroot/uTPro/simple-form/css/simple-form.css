@@ -1,0 +1,31 @@
+/* ── SimpleForm Frontend Styles ── */
+.sf { max-width: 100%; }
+.sf .sf-error { color: #e53935; font-size: 0.8rem; display: none; }
+.sf .sf-error:not(:empty) { display: block; }
+.sf .sf-required { color: #e53935; }
+.sf-actions { display: flex; gap: 12px; margin-top: 20px; }
+.sf-btn {
+    padding: 14px 40px; font-size: 14px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; border: 2px solid #555; border-radius: 4px; cursor: pointer;
+    transition: all 0.2s;
+}
+.sf-message { margin-top: 16px; padding: 12px; border-radius: 4px; }
+.sf-success { background: #e8fde8; color: #27ae60; }
+.sf-fail { background: #fde8e8; color: #c0392b; }
+
+/* ── Groups / Fieldsets ── */
+.sf-group { border: none; padding: 0; margin: 0 0 1.5em 0; }
+.sf-group-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75em; padding: 0; }
+.sf-group-grid { width: 100%; }
+.sf-group-field { min-width: 0; }
+
+/* ── Content Block ── */
+.sf-content-block { margin: 8px 0; }
+
+/* ── Step divider ── */
+.sf-step { margin: 16px 0 8px; }
+.sf-step-title { font-size: 1.1rem; margin: 0 0 8px; }
+.sf-step-divider { border: none; border-top: 1px solid #ddd; }
+
+/* ── Range ── */
+.sf-range-value { font-weight: 600; margin-left: 8px; }

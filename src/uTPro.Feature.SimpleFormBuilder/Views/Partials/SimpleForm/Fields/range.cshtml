@@ -1,0 +1,20 @@
+@* Range slider with min/max/step *@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+    var min = h.Attr("min", "0");
+    var max = h.Attr("max", "100");
+    var step = h.Attr("step", "1");
+    var defaultVal = Model.DefaultValue ?? min;
+}
+
+@h.Label()
+<span class="sf-range-value" id="@(h.FieldId)-val">@defaultVal</span>
+<input type="range"
+       id="@h.FieldId"
+       name="@h.Name"
+       min="@min" max="@max" step="@step"
+       value="@defaultVal"
+       oninput="document.getElementById('@(h.FieldId)-val').textContent=this.value" />
+@h.Error()

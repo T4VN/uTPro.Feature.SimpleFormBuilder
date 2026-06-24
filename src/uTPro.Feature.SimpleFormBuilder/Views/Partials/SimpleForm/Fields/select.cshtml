@@ -1,0 +1,18 @@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+}
+
+@h.Label()
+<select id="@h.FieldId" name="@h.Name" @h.RequiredAttr()>
+    <option value="">@(Model.Placeholder ?? "-- Select --")</option>
+    @if (Model.Options != null)
+    {
+        @foreach (var opt in Model.Options)
+        {
+            <option value="@opt.Value" selected="@(opt.Value == Model.DefaultValue)">@opt.Text</option>
+        }
+    }
+</select>
+@h.Error()

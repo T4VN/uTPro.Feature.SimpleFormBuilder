@@ -1,0 +1,15 @@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+    var rows = h.Attr("rows", "4");
+}
+
+@h.Label()
+<textarea id="@h.FieldId"
+          name="@h.Name"
+          placeholder="@Model.Placeholder"
+          @h.RequiredAttr()
+          rows="@rows"
+          @h.DataMsgAttr()>@Model.DefaultValue</textarea>
+@h.Error()
