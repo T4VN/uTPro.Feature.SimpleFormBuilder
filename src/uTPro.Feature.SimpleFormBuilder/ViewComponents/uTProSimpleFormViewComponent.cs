@@ -4,8 +4,8 @@ using uTPro.Feature.SimpleFormBuilder.Services;
 
 namespace uTPro.Feature.SimpleFormBuilder.ViewComponents;
 
-public class SimpleFormViewComponent(
-    ISimpleFormService formService,
+public class uTProSimpleFormViewComponent(
+    IuTProSimpleFormService formService,
     ICompositeViewEngine viewEngine) : ViewComponent
 {
     public IViewComponentResult Invoke(
@@ -18,7 +18,7 @@ public class SimpleFormViewComponent(
     {
         var form = formService.GetFormByAlias(alias);
         if (form == null || !form.IsEnabled)
-            return Content($"<!-- SimpleForm '{alias}' not found or disabled -->");
+            return Content($"<!-- uTProSimpleForm '{alias}' not found or disabled -->");
 
         ViewBag.FormCssClass = cssClass ?? "";
         ViewBag.SubmitBtnText = submitBtnText ?? "Submit";
@@ -31,20 +31,20 @@ public class SimpleFormViewComponent(
 
     /// <summary>
     /// Resolves the template path. Checks both local files and RCL-compiled views
-    /// so it works whether SimpleForm is a project reference or a NuGet package.
+    /// so it works whether uTProSimpleForm is a project reference or a NuGet package.
     /// </summary>
     private string ResolveTemplate(string? template, string alias)
     {
         if (!string.IsNullOrEmpty(template))
         {
-            var path = $"~/Views/Partials/SimpleForm/{template}.cshtml";
+            var path = $"~/Views/Partials/uTProSimpleForm/{template}.cshtml";
             if (ViewExists(path)) return path;
         }
 
-        var aliasPath = $"~/Views/Partials/SimpleForm/{alias}.cshtml";
+        var aliasPath = $"~/Views/Partials/uTProSimpleForm/{alias}.cshtml";
         if (ViewExists(aliasPath)) return aliasPath;
 
-        return "~/Views/Partials/SimpleForm/Default.cshtml";
+        return "~/Views/Partials/uTProSimpleForm/Default.cshtml";
     }
 
     private bool ViewExists(string viewPath)

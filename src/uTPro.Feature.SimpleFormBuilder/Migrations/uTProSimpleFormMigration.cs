@@ -10,26 +10,26 @@ using Umbraco.Cms.Infrastructure.Scoping;
 namespace uTPro.Feature.SimpleFormBuilder.Migrations;
 
 /// <summary>
-/// Creates the SimpleForm tables and seeds the default "Contact Us" form.
+/// Creates the uTProSimpleForm tables and seeds the default "Contact Us" form.
 /// This is a single, clean migration that produces the final schema in one step.
 /// </summary>
-public class InitSimpleForm : MigrationBase
+public class InituTProSimpleForm : MigrationBase
 {
-    public InitSimpleForm(IMigrationContext context) : base(context) { }
+    public InituTProSimpleForm(IMigrationContext context) : base(context) { }
 
     protected override void Migrate()
     {
         // ── Tables ──
 
-        if (TableExists("utpro_SimpleFormEntry"))
-            Delete.Table("utpro_SimpleFormEntry").Do();
-        if (TableExists("utpro_SimpleForm"))
-            Delete.Table("utpro_SimpleForm").Do();
+        if (TableExists("utpro_uTProSimpleFormEntry"))
+            Delete.Table("utpro_uTProSimpleFormEntry").Do();
+        if (TableExists("utpro_uTProSimpleForm"))
+            Delete.Table("utpro_uTProSimpleForm").Do();
 
-        Create.Table("utpro_SimpleForm")
-            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_utpro_SimpleForm")
+        Create.Table("utpro_uTProSimpleForm")
+            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_utpro_uTProSimpleForm")
             .WithColumn("Name").AsString(255).NotNullable()
-            .WithColumn("Alias").AsString(255).NotNullable().Unique("IX_utpro_SimpleForm_Alias")
+            .WithColumn("Alias").AsString(255).NotNullable().Unique("IX_utpro_uTProSimpleForm_Alias")
             .WithColumn("FieldsJson").AsCustom("NTEXT").Nullable()
             .WithColumn("GroupsJson").AsCustom("NTEXT").Nullable()
             .WithColumn("SuccessMessage").AsString(1000).Nullable()
@@ -45,8 +45,8 @@ public class InitSimpleForm : MigrationBase
             .WithColumn("UpdatedUtc").AsDateTime().NotNullable()
             .Do();
 
-        Create.Table("utpro_SimpleFormEntry")
-            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_utpro_SimpleFormEntry")
+        Create.Table("utpro_uTProSimpleFormEntry")
+            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_utpro_uTProSimpleFormEntry")
             .WithColumn("FormId").AsInt32().NotNullable()
             .WithColumn("DataJson").AsCustom("NTEXT").Nullable()
             .WithColumn("IpAddress").AsString(100).Nullable()
@@ -81,7 +81,7 @@ public class InitSimpleForm : MigrationBase
 ]";
 
         Context.Database.Execute(@"
-            INSERT INTO utpro_SimpleForm
+            INSERT INTO utpro_uTProSimpleForm
                 (Name, Alias, FieldsJson, GroupsJson,
                  SuccessMessage, RedirectUrl, EmailTo, EmailSubject,
                  StoreEntries, IsEnabled, VisibleColumnsJson,
@@ -111,17 +111,17 @@ public class InitSimpleForm : MigrationBase
 
 // ── Migration runner ──
 
-public class RunSimpleFormMigration : IComposer
+public class RunuTProSimpleFormMigration : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
     {
         builder.AddNotificationAsyncHandler<
             Umbraco.Cms.Core.Notifications.UmbracoApplicationStartedNotification,
-            SimpleFormMigrationHandler>();
+            uTProSimpleFormMigrationHandler>();
     }
 }
 
-public class SimpleFormMigrationHandler
+public class uTProSimpleFormMigrationHandler
     : Umbraco.Cms.Core.Events.INotificationAsyncHandler<
         Umbraco.Cms.Core.Notifications.UmbracoApplicationStartedNotification>
 {
@@ -130,7 +130,7 @@ public class SimpleFormMigrationHandler
     private readonly IKeyValueService _keyValueService;
     private readonly IRuntimeState _runtimeState;
 
-    public SimpleFormMigrationHandler(
+    public uTProSimpleFormMigrationHandler(
         ICoreScopeProvider coreScopeProvider,
         IMigrationPlanExecutor migrationPlanExecutor,
         IKeyValueService keyValueService,
@@ -149,9 +149,9 @@ public class SimpleFormMigrationHandler
         if (_runtimeState.Level < RuntimeLevel.Run)
             return Task.CompletedTask;
 
-        var plan = new MigrationPlan("uTPro.SimpleForm");
+        var plan = new MigrationPlan("uTPro.uTProSimpleForm");
         plan.From(string.Empty)
-            .To<InitSimpleForm>("simpleform-init");
+            .To<InituTProSimpleForm>("utprosimpleform-init");
 
         var upgrader = new Upgrader(plan);
         upgrader.Execute(_migrationPlanExecutor, _coreScopeProvider, _keyValueService);

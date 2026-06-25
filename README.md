@@ -27,7 +27,7 @@ That's it. On first run, SimpleForm automatically creates its database tables an
 Drop this line into any Razor view or block component:
 
 ```razor
-@await Component.InvokeAsync("SimpleForm", new { alias = "contact-us" })
+@await Component.InvokeAsync("uTProSimpleForm", new { alias = "contact-us" })
 ```
 
 The `alias` matches the form you created in the backoffice (Settings → Simple Form).
@@ -35,7 +35,7 @@ The `alias` matches the form you created in the backoffice (Settings → Simple 
 ### Optional Parameters
 
 ```razor
-@await Component.InvokeAsync("SimpleForm", new {
+@await Component.InvokeAsync("uTProSimpleForm", new {
     alias = "contact-us",
     template = "MyLayout",       // use a custom Razor template
     cssClass = "my-form",        // add a CSS class to the <form> tag
@@ -49,9 +49,9 @@ The `alias` matches the form you created in the backoffice (Settings → Simple 
 
 SimpleForm looks for a matching view in this order:
 
-1. `Views/Partials/SimpleForm/{template}.cshtml` — if you passed a `template` parameter
-2. `Views/Partials/SimpleForm/{alias}.cshtml` — a view named after the form alias
-3. `Views/Partials/SimpleForm/Default.cshtml` — the built-in default
+1. `Views/Partials/uTProSimpleForm/{template}.cshtml` — if you passed a `template` parameter
+2. `Views/Partials/uTProSimpleForm/{alias}.cshtml` — a view named after the form alias
+3. `Views/Partials/uTProSimpleForm/Default.cshtml` — the built-in default
 
 To customize the layout for a specific form, just create a file matching its alias. No config changes needed.
 
@@ -111,7 +111,7 @@ This is the part most developers care about. It takes two steps.
 Create a `.cshtml` file named after your field type:
 
 ```
-Views/Partials/SimpleForm/Fields/{yourType}.cshtml
+Views/Partials/uTProSimpleForm/Fields/{yourType}.cshtml
 ```
 
 Here's a minimal template:
@@ -134,7 +134,7 @@ SimpleForm auto-detects the new file. No changes to `Default.cshtml` or any conf
 
 ### Step 2 — Register it in the backoffice picker
 
-Open `Controllers/SimpleFormApiController.cs` and add one line to the `FieldTypes()` method:
+Open `Controllers/uTProSimpleFormApiController.cs` and add one line to the `FieldTypes()` method:
 
 ```csharp
 new { type = "yourType", label = "Your Type Label" },
@@ -181,7 +181,7 @@ Validation messages support Umbraco Dictionary keys. Wrap the key in double curl
 
 Here's a complete walkthrough of adding a custom "star rating" field.
 
-**Step 1** — Create `Views/Partials/SimpleForm/Fields/star-rating.cshtml`:
+**Step 1** — Create `Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml`:
 
 ```razor
 @using uTPro.Feature.SimpleFormBuilder.Helpers
@@ -205,7 +205,7 @@ Here's a complete walkthrough of adding a custom "star rating" field.
 @h.Error()
 ```
 
-**Step 2** — Add to `SimpleFormApiController.cs`:
+**Step 2** — Add to `uTProSimpleFormApiController.cs`:
 
 ```csharp
 new { type = "star-rating", label = "Star Rating" },
@@ -221,7 +221,7 @@ When you install SimpleForm via NuGet, all Razor views are compiled into the pac
 
 ```
 YourWebProject/
-  Views/Partials/SimpleForm/
+  Views/Partials/uTProSimpleForm/
     Default.cshtml                  ← overrides the form layout
     Fields/
       textarea.cshtml               ← overrides just the textarea field
@@ -294,21 +294,21 @@ GET /api/utpro/simple-form/entries/{alias}?skip=0&take=20
 ```
 uTPro.Feature.SimpleFormBuilder/
 ├── Controllers/
-│   ├── SimpleFormApiController.cs      # Backoffice API (CRUD, entries, field types)
-│   └── SimpleFormSubmitController.cs   # Public API (submit, render, entries)
+│   ├── uTProSimpleFormApiController.cs      # Backoffice API (CRUD, entries, field types)
+│   └── uTProSimpleFormSubmitController.cs   # Public API (submit, render, entries)
 ├── Helpers/
 │   ├── FieldPartialResolver.cs         # Finds the right partial for each field type
-│   ├── SimpleFormAssets.cs             # Resolves CSS/JS paths (local vs NuGet)
-│   └── SimpleFormHtmlHelper.cs         # FieldHelper class used in partials
+│   ├── uTProSimpleFormAssets.cs             # Resolves CSS/JS paths (local vs NuGet)
+│   └── uTProSimpleFormHtmlHelper.cs         # FieldHelper class used in partials
 ├── Migrations/
-│   └── SimpleFormMigration.cs          # Creates tables + seeds sample data
+│   └── uTProSimpleFormMigration.cs          # Creates tables + seeds sample data
 ├── Models/
 │   └── FormModels.cs                   # All DTOs, ViewModels, and request models
 ├── Services/
-│   └── SimpleFormService.cs            # Core logic, encryption, entry management
+│   └── uTProSimpleFormService.cs            # Core logic, encryption, entry management
 ├── ViewComponents/
-│   └── SimpleFormViewComponent.cs      # The @Component.InvokeAsync entry point
-├── Views/Partials/SimpleForm/
+│   └── uTProSimpleFormViewComponent.cs      # The @Component.InvokeAsync entry point
+├── Views/Partials/uTProSimpleForm/
 │   ├── Default.cshtml                  # Main form template
 │   └── Fields/                         # One file per field type
 │       ├── _Default.cshtml             # Fallback for standard inputs
@@ -328,7 +328,7 @@ uTPro.Feature.SimpleFormBuilder/
 
 Created automatically on first startup. No manual SQL needed.
 
-**`utpro_SimpleForm`** — stores form definitions
+**`utpro_uTProSimpleForm`** — stores form definitions
 
 | Column | Type | Purpose |
 |---|---|---|
@@ -349,12 +349,12 @@ Created automatically on first startup. No manual SQL needed.
 | CreatedUtc | datetime | Created timestamp |
 | UpdatedUtc | datetime | Last modified timestamp |
 
-**`utpro_SimpleFormEntry`** — stores form submissions
+**`utpro_uTProSimpleFormEntry`** — stores form submissions
 
 | Column | Type | Purpose |
 |---|---|---|
 | Id | int (PK) | Auto-increment |
-| FormId | int | Links to utpro_SimpleForm |
+| FormId | int | Links to utpro_uTProSimpleForm |
 | DataJson | ntext | Submitted data (sensitive fields encrypted) |
 | IpAddress | nvarchar(100) | Submitter's IP address |
 | UserAgent | nvarchar(500) | Submitter's browser |
@@ -374,4 +374,4 @@ Created automatically on first startup. No manual SQL needed.
 
 ## Migration Note
 
-The database migration runs automatically on application startup via Umbraco's migration system. If you need to re-run it on a fresh database, delete the `uTPro.SimpleForm` key from the `umbracoKeyValue` table.
+The database migration runs automatically on application startup via Umbraco's migration system. If you need to re-run it on a fresh database, delete the `uTPro.uTProSimpleForm` key from the `umbracoKeyValue` table.

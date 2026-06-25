@@ -8,13 +8,13 @@ using uTPro.Feature.SimpleFormBuilder.Models;
 
 namespace uTPro.Feature.SimpleFormBuilder.Services;
 
-class DISimpleFormService : IComposer
+class DIuTProSimpleFormService : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
-        => builder.Services.AddScoped<ISimpleFormService, SimpleFormService>();
+        => builder.Services.AddScoped<IuTProSimpleFormService, uTProSimpleFormService>();
 }
 
-public interface ISimpleFormService
+public interface IuTProSimpleFormService
 {
     List<FormViewModel> GetAllForms();
     FormViewModel? GetForm(int id);
@@ -26,13 +26,13 @@ public interface ISimpleFormService
     (bool Success, string Message) DeleteEntry(int id);
 }
 
-internal class SimpleFormService(
+internal class uTProSimpleFormService(
     IScopeProvider scopeProvider,
-    ILogger<SimpleFormService> logger,
-    IDataProtectionProvider dataProtectionProvider) : ISimpleFormService
+    ILogger<uTProSimpleFormService> logger,
+    IDataProtectionProvider dataProtectionProvider) : IuTProSimpleFormService
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-    private const string ProtectorPurpose = "uTPro.SimpleForm.SensitiveField";
+    private const string ProtectorPurpose = "uTPro.uTProSimpleForm.SensitiveField";
     private const string EncryptedPrefix = "🔒:";
     private const string MaskedValue = "*****";
 
@@ -41,21 +41,21 @@ internal class SimpleFormService(
     public List<FormViewModel> GetAllForms()
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dtos = scope.Database.Fetch<SimpleFormDto>("SELECT * FROM utpro_SimpleForm ORDER BY Name");
+        var dtos = scope.Database.Fetch<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm ORDER BY Name");
         return dtos.Select(MapToViewModel).ToList();
     }
 
     public FormViewModel? GetForm(int id)
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dto = scope.Database.SingleOrDefault<SimpleFormDto>("SELECT * FROM utpro_SimpleForm WHERE Id = @0", id);
+        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Id = @0", id);
         return dto == null ? null : MapToViewModel(dto);
     }
 
     public FormViewModel? GetFormByAlias(string alias)
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dto = scope.Database.SingleOrDefault<SimpleFormDto>("SELECT * FROM utpro_SimpleForm WHERE Alias = @0", alias);
+        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Alias = @0", alias);
         return dto == null ? null : MapToViewModel(dto);
     }
 
@@ -71,7 +71,7 @@ internal class SimpleFormService(
 
             if (request.Id > 0)
             {
-                var existing = db.SingleOrDefault<SimpleFormDto>("SELECT * FROM utpro_SimpleForm WHERE Id = @0", request.Id);
+                var existing = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Id = @0", request.Id);
                 if (existing == null) return (false, "Form not found", 0);
 
                 existing.Name = request.Name;
@@ -94,10 +94,10 @@ internal class SimpleFormService(
             }
             else
             {
-                var dup = db.SingleOrDefault<SimpleFormDto>("SELECT * FROM utpro_SimpleForm WHERE Alias = @0", request.Alias);
+                var dup = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Alias = @0", request.Alias);
                 if (dup != null) return (false, "Alias already exists", 0);
 
-                var dto = new SimpleFormDto
+                var dto = new uTProSimpleFormDto
                 {
                     Name = request.Name,
                     Alias = request.Alias,
@@ -132,8 +132,8 @@ internal class SimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            scope.Database.Execute("DELETE FROM utpro_SimpleFormEntry WHERE FormId = @0", id);
-            scope.Database.Execute("DELETE FROM utpro_SimpleForm WHERE Id = @0", id);
+            scope.Database.Execute("DELETE FROM utpro_uTProSimpleFormEntry WHERE FormId = @0", id);
+            scope.Database.Execute("DELETE FROM utpro_uTProSimpleForm WHERE Id = @0", id);
             return (true, "Deleted");
         }
         catch (Exception ex)
@@ -148,7 +148,7 @@ internal class SimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            var form = scope.Database.SingleOrDefault<SimpleFormDto>("SELECT * FROM utpro_SimpleForm WHERE Alias = @0", alias);
+            var form = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Alias = @0", alias);
             if (form == null) return (false, "Form not found");
             if (!form.IsEnabled) return (false, "Form is disabled");
 
@@ -186,7 +186,7 @@ internal class SimpleFormService(
 
             if (form.StoreEntries)
             {
-                var entry = new SimpleFormEntryDto
+                var entry = new uTProSimpleFormEntryDto
                 {
                     FormId = form.Id,
                     DataJson = JsonSerializer.Serialize(storageData, JsonOpts),
@@ -211,7 +211,7 @@ internal class SimpleFormService(
         using var scope = scopeProvider.CreateScope(autoComplete: true);
         var db = scope.Database;
         var sql = scope.SqlContext.Sql()
-            .Select("*").From("utpro_SimpleFormEntry")
+            .Select("*").From("utpro_uTProSimpleFormEntry")
             .Where("FormId = @0", formId);
 
         if (dateFrom.HasValue)
@@ -223,7 +223,7 @@ internal class SimpleFormService(
 
         sql = sql.OrderByDescending("CreatedUtc");
 
-        var page = db.Page<SimpleFormEntryDto>(skip / Math.Max(take, 1) + 1, take, sql);
+        var page = db.Page<uTProSimpleFormEntryDto>(skip / Math.Max(take, 1) + 1, take, sql);
         return new PagedResult<EntryViewModel>
         {
             Items = page.Items.Select(s => MapEntry(s, canViewSensitive)),
@@ -236,7 +236,7 @@ internal class SimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            scope.Database.Execute("DELETE FROM utpro_SimpleFormEntry WHERE Id = @0", id);
+            scope.Database.Execute("DELETE FROM utpro_uTProSimpleFormEntry WHERE Id = @0", id);
             return (true, "Deleted");
         }
         catch (Exception ex)
@@ -246,7 +246,7 @@ internal class SimpleFormService(
         }
     }
 
-    private static FormViewModel MapToViewModel(SimpleFormDto dto) => new()
+    private static FormViewModel MapToViewModel(uTProSimpleFormDto dto) => new()
     {
         Id = dto.Id, Name = dto.Name, Alias = dto.Alias,
         Fields = string.IsNullOrEmpty(dto.FieldsJson)
@@ -263,7 +263,7 @@ internal class SimpleFormService(
         CreatedUtc = dto.CreatedUtc, UpdatedUtc = dto.UpdatedUtc
     };
 
-    private EntryViewModel MapEntry(SimpleFormEntryDto dto, bool canViewSensitive = false)
+    private EntryViewModel MapEntry(uTProSimpleFormEntryDto dto, bool canViewSensitive = false)
     {
         var data = string.IsNullOrEmpty(dto.DataJson)
             ? new Dictionary<string, string>()

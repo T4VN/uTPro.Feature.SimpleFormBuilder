@@ -6,7 +6,7 @@ using uTPro.Feature.SimpleFormBuilder.Models;
 namespace uTPro.Feature.SimpleFormBuilder.Helpers;
 
 /// <summary>
-/// Razor helper methods shared across all SimpleForm field partials.
+/// Razor helper methods shared across all uTProSimpleForm field partials.
 /// Eliminates boilerplate for labels, error spans, field IDs, and validation messages.
 /// 
 /// Usage in a field partial:

@@ -9,8 +9,8 @@ namespace uTPro.Feature.SimpleFormBuilder.Controllers;
 
 [VersionedApiBackOfficeRoute("utpro/simple-form")]
 [ApiExplorerSettings(GroupName = "uTPro Simple Form")]
-public class SimpleFormApiController(
-    ISimpleFormService formService,
+public class uTProSimpleFormApiController(
+    IuTProSimpleFormService formService,
     IBackOfficeSecurityAccessor backOfficeSecurityAccessor) : ManagementApiControllerBase
 {
     // ── Permissions ──

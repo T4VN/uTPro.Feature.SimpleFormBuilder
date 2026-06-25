@@ -5,9 +5,9 @@ namespace uTPro.Feature.SimpleFormBuilder.Models;
 
 // ── Database DTOs ──
 
-[TableName("utpro_SimpleForm")]
+[TableName("utpro_uTProSimpleForm")]
 [PrimaryKey("Id", AutoIncrement = true)]
-public class SimpleFormDto
+public class uTProSimpleFormDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -27,9 +27,9 @@ public class SimpleFormDto
     public DateTime UpdatedUtc { get; set; }
 }
 
-[TableName("utpro_SimpleFormEntry")]
+[TableName("utpro_uTProSimpleFormEntry")]
 [PrimaryKey("Id", AutoIncrement = true)]
-public class SimpleFormEntryDto
+public class uTProSimpleFormEntryDto
 {
     public int Id { get; set; }
     public int FormId { get; set; }

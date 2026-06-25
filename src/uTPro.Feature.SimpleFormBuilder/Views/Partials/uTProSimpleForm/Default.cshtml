@@ -66,8 +66,8 @@
 @if (Context.Items["sf-assets-loaded"] is not true)
 {
     Context.Items["sf-assets-loaded"] = true;
-    uTPro.Feature.SimpleFormBuilder.Helpers.SimpleFormAssets.Resolve(
+    uTPro.Feature.SimpleFormBuilder.Helpers.uTProSimpleFormAssets.Resolve(
         Context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>());
-    <link rel="stylesheet" href="@Url.Content("~" + uTPro.Feature.SimpleFormBuilder.Helpers.SimpleFormAssets.Css)" />
-    <script src="@Url.Content("~" + uTPro.Feature.SimpleFormBuilder.Helpers.SimpleFormAssets.Js)"></script>
+    <link rel="stylesheet" href="@Url.Content("~" + uTPro.Feature.SimpleFormBuilder.Helpers.uTProSimpleFormAssets.Css)" />
+    <script src="@Url.Content("~" + uTPro.Feature.SimpleFormBuilder.Helpers.uTProSimpleFormAssets.Js)"></script>
 }

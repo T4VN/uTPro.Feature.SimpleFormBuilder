@@ -4,7 +4,7 @@ using Microsoft.Extensions.FileProviders;
 namespace uTPro.Feature.SimpleFormBuilder.Helpers;
 
 /// <summary>
-/// Resolves the correct base path for SimpleForm static assets (CSS, JS).
+/// Resolves the correct base path for uTProSimpleForm static assets (CSS, JS).
 /// 
 /// When consumed via NuGet (RCL), assets are served at:
 ///   ~/_content/uTPro.Feature.SimpleFormBuilder/uTPro/simple-form/...
@@ -14,7 +14,7 @@ namespace uTPro.Feature.SimpleFormBuilder.Helpers;
 /// 
 /// This helper checks which path exists at runtime and returns the correct one.
 /// </summary>
-public static class SimpleFormAssets
+public static class uTProSimpleFormAssets
 {
     private const string PackageId = "uTPro.Feature.SimpleFormBuilder";
     private const string LocalBase = "/uTPro/simple-form";

@@ -7,7 +7,7 @@ namespace uTPro.Feature.SimpleFormBuilder.Controllers;
 
 [ApiController]
 [Route("api/utpro/simple-form")]
-public class SimpleFormSubmitController(ISimpleFormService formService) : ControllerBase
+public class uTProSimpleFormSubmitController(IuTProSimpleFormService formService) : ControllerBase
 {
     [HttpPost("submit")]
     public IActionResult Submit([FromBody] SubmitFormRequest request)

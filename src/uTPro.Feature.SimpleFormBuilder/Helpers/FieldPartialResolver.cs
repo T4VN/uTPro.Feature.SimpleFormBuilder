@@ -7,19 +7,19 @@ namespace uTPro.Feature.SimpleFormBuilder.Helpers;
 
 /// <summary>
 /// Resolves the correct partial view path for a given field type.
-/// Looks for ~/Views/Partials/SimpleForm/Fields/{type}.cshtml first,
-/// then falls back to ~/Views/Partials/SimpleForm/Fields/_Default.cshtml.
+/// Looks for ~/Views/Partials/uTProSimpleForm/Fields/{type}.cshtml first,
+/// then falls back to ~/Views/Partials/uTProSimpleForm/Fields/_Default.cshtml.
 ///
 /// HOW TO ADD A NEW FIELD TYPE:
-/// 1. Create a new file: Views/Partials/SimpleForm/Fields/{yourType}.cshtml
+/// 1. Create a new file: Views/Partials/uTProSimpleForm/Fields/{yourType}.cshtml
 /// 2. Use @model FormFieldViewModel
 /// 3. Use FieldHelper for consistent label/error rendering
-/// 4. Register the type in SimpleFormApiController.FieldTypes() if you want it in the backoffice picker
+/// 4. Register the type in uTProSimpleFormApiController.FieldTypes() if you want it in the backoffice picker
 /// That's it — the resolver picks it up automatically.
 /// </summary>
 public static class FieldPartialResolver
 {
-    private const string FieldsBasePath = "~/Views/Partials/SimpleForm/Fields/";
+    private const string FieldsBasePath = "~/Views/Partials/uTProSimpleForm/Fields/";
     private const string FallbackPartial = FieldsBasePath + "_Default.cshtml";
 
     /// <summary>
