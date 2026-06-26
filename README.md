@@ -1,6 +1,21 @@
-# SimpleForm — Lightweight Form Builder for Umbraco
+# uTPro Form — Lightweight Form Builder for Umbraco
 
-SimpleForm lets you create and manage dynamic forms from the Umbraco backoffice — no code required for everyday use. For developers, adding a custom field type takes just two steps.
+Create and manage dynamic forms directly from the Umbraco backoffice — no code required for everyday use. Render any form on the front-end with a single line, and extend it with custom field types in two steps.
+
+Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
+
+---
+
+## Features
+
+- Dedicated **uTPro Form** section in the top menu bar, with a left **Forms** tree (like Dictionary)
+- Visual builder: groups → 12-column layout → fields, drag-free ordering, live settings
+- **19 built-in field types** and a 2-step custom field type extension point
+- Client-side validation with multi-language (Umbraco Dictionary) messages
+- **Sensitive fields encrypted at rest** (ASP.NET Data Protection), masked in the UI by default
+- Entry storage with search, date filters, paging, CSV export
+- Public REST APIs for submit / render / entries (opt-in per form)
+- Role-aware UI driven by Umbraco user groups
 
 ---
 
@@ -18,21 +33,46 @@ dotnet add package uTPro.Feature.SimpleFormBuilder
 <ProjectReference Include="path/to/uTPro.Feature.SimpleFormBuilder.csproj" />
 ```
 
-That's it. On first run, SimpleForm automatically creates its database tables and seeds a sample "Contact Us" form.
+On first run, uTPro Form automatically creates its database tables and seeds a sample **Contact Us** form. No manual SQL or configuration needed.
+
+### Framework / Umbraco compatibility
+
+| Umbraco | .NET | Package target |
+|---|---|---|
+| 16 | .NET 9 | `net9.0` |
+| 17 & 18 | .NET 10 | `net10.0` |
+
+The package multi-targets both, so the correct dependencies are restored automatically for your project.
+
+---
+
+## Where It Lives in the Backoffice
+
+After install, a new **uTPro Form** item appears in the top (blue) section menu.
+
+> **Access:** custom sections are governed by user-group permissions. Grant the **uTPro Form** section to a user group under **Users → User groups → _group_ → Sections → Choose → uTPro Form**, then reload the backoffice. See [Roles & Permissions](#roles--permissions).
+
+The section uses a familiar two-pane layout:
+
+- **Left panel (Forms tree)** — lists all forms. A **+** button creates a new form, and a **⋯ (Options)** menu offers:
+  - **Reload** — refresh the list
+  - **Create** — new form
+  - **Import** — reserved for a future release
+- **Main area** — a **Create** button, a **filter** box, and the forms table (Name, Alias, Fields, Status, Actions). Selecting a form opens it; users without edit rights jump straight to its **Entries**.
 
 ---
 
 ## Rendering a Form
 
-Drop this line into any Razor view or block component:
+Drop this into any Razor view or block component:
 
 ```razor
 @await Component.InvokeAsync("uTProSimpleForm", new { alias = "contact-us" })
 ```
 
-The `alias` matches the form you created in the backoffice (the **uTPro Form** section).
+The `alias` matches the form you created in the **uTPro Form** section.
 
-### Optional Parameters
+### Optional parameters
 
 ```razor
 @await Component.InvokeAsync("uTProSimpleForm", new {
@@ -45,38 +85,36 @@ The `alias` matches the form you created in the backoffice (the **uTPro Form** s
 })
 ```
 
-### How Template Resolution Works
+### Template resolution order
 
-SimpleForm looks for a matching view in this order:
-
-1. `Views/Partials/uTProSimpleForm/{template}.cshtml` — if you passed a `template` parameter
+1. `Views/Partials/uTProSimpleForm/{template}.cshtml` — if a `template` parameter was passed
 2. `Views/Partials/uTProSimpleForm/{alias}.cshtml` — a view named after the form alias
 3. `Views/Partials/uTProSimpleForm/Default.cshtml` — the built-in default
 
-To customize the layout for a specific form, just create a file matching its alias. No config changes needed.
+To customize the layout for a specific form, create a file matching its alias. No config changes needed.
 
 ---
 
 ## Creating Forms in the Backoffice
 
-1. Go to the **uTPro Form** section in the Umbraco backoffice (top menu bar)
-2. Click **New Form**
+1. Open the **uTPro Form** section
+2. Click **Create** (main area) or **+** (left panel)
 3. Give it a **Name** and **Alias** (the alias is what you use in code)
-4. Add **Groups** to organize your fields into sections
-5. Inside each group, add **Columns** (based on a 12-column grid) and drop **Fields** into them
+4. Add **Groups** to organize fields into sections
+5. Inside each group, add **Columns** (12-column grid) and drop **Fields** into them
 6. Configure each field: type, label, placeholder, validation, etc.
-7. Set up the **Success Message**, optional **Redirect URL**, and **Email Notification**
+7. Set the **Success Message**, optional **Redirect URL**, and **Email Notification**
 8. Save
 
-Your form is ready to render on the frontend.
+Your form is ready to render on the front-end.
 
 ---
 
 ## Built-in Field Types
 
-SimpleForm ships with 19 field types out of the box:
+Ships with 19 field types out of the box:
 
-| Type | Description | Has its own partial? |
+| Type | Description | Dedicated partial? |
 |---|---|---|
 | `text` | Single-line text input | No (uses `_Default.cshtml`) |
 | `email` | Email input | No |
@@ -95,16 +133,16 @@ SimpleForm ships with 19 field types out of the box:
 | `range` | Slider with min/max/step | Yes |
 | `color` | Color picker | Yes |
 | `time` | Time picker with min/max | Yes |
-| `div` | HTML content block (not a form input) | Yes |
+| `div` | HTML content block (not an input) | Yes |
 | `step` | Visual step divider | Yes |
 
-Types without a dedicated partial fall back to `_Default.cshtml`, which renders a standard `<input>` element.
+Types without a dedicated partial fall back to `_Default.cshtml`, which renders a standard `<input>`.
 
 ---
 
 ## Adding a Custom Field Type
 
-This is the part most developers care about. It takes two steps.
+It takes two steps.
 
 ### Step 1 — Create a Razor partial
 
@@ -114,7 +152,7 @@ Create a `.cshtml` file named after your field type:
 Views/Partials/uTProSimpleForm/Fields/{yourType}.cshtml
 ```
 
-Here's a minimal template:
+Minimal template:
 
 ```razor
 @using uTPro.Feature.SimpleFormBuilder.Helpers
@@ -130,56 +168,54 @@ Here's a minimal template:
 @h.Error()
 ```
 
-SimpleForm auto-detects the new file. No changes to `Default.cshtml` or any config.
+uTPro Form auto-detects the new file. No changes to `Default.cshtml` or any config.
 
 ### Step 2 — Register it in the backoffice picker
 
-Open `Controllers/uTProSimpleFormApiController.cs` and add one line to the `FieldTypes()` method:
+Open `Controllers/uTProSimpleFormApiController.cs` and add one line to `FieldTypes()`:
 
 ```csharp
 new { type = "yourType", label = "Your Type Label" },
 ```
 
-Build. Your new field type now appears in the backoffice form builder.
+Build. Your new field type now appears in the form builder.
 
 ---
 
-## FieldHelper — The Toolkit for Field Partials
+## FieldHelper — Toolkit for Field Partials
 
-Every field partial can use `FieldHelper` to avoid repetitive HTML boilerplate:
+Every field partial can use `FieldHelper` to avoid repetitive HTML:
 
 ```razor
 @{ var h = new FieldHelper(Model, ViewData); }
 ```
 
-| What you call | What it renders |
+| Call | Renders |
 |---|---|
 | `h.FieldId` | Unique HTML id like `sf-contact-us-email` |
 | `h.Name` | The field name for form submission |
 | `h.Label()` | `<label>` with a red asterisk if required |
-| `h.LabelNoFor()` | Same label but without `for` attribute (for checkbox/radio groups) |
-| `h.Error()` | `<span class="sf-error">` for client-side validation messages |
+| `h.LabelNoFor()` | Label without `for` (for checkbox/radio groups) |
+| `h.Error()` | `<span class="sf-error">` for validation messages |
 | `h.RequiredAttr()` | Outputs `required` or nothing |
 | `h.PatternAttr()` | Outputs `pattern="..."` or nothing |
 | `h.DataMsgAttr()` | Outputs `data-msg="..."` with auto-translated dictionary keys |
-| `h.Attr("key", "default")` | Reads a value from `Field.Attributes` with a fallback |
+| `h.Attr("key", "default")` | Reads from `Field.Attributes` with a fallback |
 | `h.OptionalAttr("min", val)` | Outputs `min="5"` only if `val` is not empty |
 
-### Multi-language Support
+### Multi-language validation messages
 
-Validation messages support Umbraco Dictionary keys. Wrap the key in double curly braces:
+Wrap an Umbraco Dictionary key in double curly braces:
 
 ```
 {{SimpleForm.NameRequired}}
 ```
 
-`FieldHelper` automatically resolves it to the current culture's translation at render time.
+`FieldHelper` resolves it to the current culture at render time.
 
 ---
 
 ## Full Example: Star Rating Field
-
-Here's a complete walkthrough of adding a custom "star rating" field.
 
 **Step 1** — Create `Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml`:
 
@@ -211,13 +247,13 @@ Here's a complete walkthrough of adding a custom "star rating" field.
 new { type = "star-rating", label = "Star Rating" },
 ```
 
-Done. The field shows up in the backoffice builder, and the frontend renders it with stars.
+Done. The field shows up in the builder and renders with stars on the front-end.
 
 ---
 
 ## Overriding Views (NuGet Users)
 
-When you install SimpleForm via NuGet, all Razor views are compiled into the package DLL. To customize any view, create a file at the **same path** in your web project:
+When installed via NuGet, all Razor views are compiled into the package DLL. To customize any view, create a file at the **same path** in your web project:
 
 ```
 YourWebProject/
@@ -228,15 +264,13 @@ YourWebProject/
       star-rating.cshtml            ← adds a brand new field type
 ```
 
-ASP.NET Core automatically picks up local files over the ones in the NuGet package. No configuration needed.
-
-Static assets (CSS, JS) are served from `/_content/uTPro.Feature.SimpleFormBuilder/...` and can be overridden by adding your own stylesheet.
+ASP.NET Core picks up local files over the ones in the package. No configuration needed.
 
 ---
 
 ## JavaScript Hooks
 
-SimpleForm exposes two hooks for custom client-side logic:
+Two front-end hooks for custom client-side logic:
 
 ```javascript
 // Runs before submission. Return false to cancel, or an object to merge extra data.
@@ -257,9 +291,9 @@ window.__sfAfterSubmit = function (alias, success, result) {
 
 ## Public APIs
 
-SimpleForm includes REST endpoints for headless or hybrid use cases.
+REST endpoints for headless or hybrid use cases. These are **anonymous** and bypass backoffice roles — enable them deliberately.
 
-### Submit a form
+### Submit a form (always available)
 
 ```http
 POST /api/utpro/simple-form/submit
@@ -267,25 +301,60 @@ Content-Type: application/json
 
 {
   "alias": "contact-us",
-  "data": {
-    "name": "Jane",
-    "email": "jane@example.com",
-    "message": "Hello!"
-  }
+  "data": { "name": "Jane", "email": "jane@example.com", "message": "Hello!" }
 }
 ```
 
-### Get form definition (must be enabled per form)
+### Get form definition (opt-in per form: *Enable Render API*)
 
 ```http
 GET /api/utpro/simple-form/render/{alias}
 ```
 
-### Get form entries (must be enabled per form, sensitive data is masked)
+### Get form entries (opt-in per form: *Enable Entries API*, sensitive data always masked)
 
 ```http
 GET /api/utpro/simple-form/entries/{alias}?skip=0&take=20
 ```
+
+> ⚠️ Enabling the Entries API exposes that form's submissions (sensitive fields masked) to anyone who knows the alias. Use with care.
+
+---
+
+## Roles & Permissions
+
+Two things govern access to the backoffice UI:
+
+1. **Section visibility** — a user sees the **uTPro Form** menu only if their user group is granted that section (independent of any other section).
+2. **Action permissions** — returned by the API for the current user:
+   - `isAdmin` — member of the built-in **Administrators** group.
+   - `canEdit` (manage forms) — **admin _or_ the user's group has the _Settings_ section**.
+   - `canViewSensitive` — **admin _or_ member of a group whose alias is `sensitiveData`**.
+
+| Capability | Required permission |
+|---|---|
+| See the **uTPro Form** menu | Group granted the *uTPro Form* section |
+| View form list, view entries, export CSV | Any backoffice user with the section |
+| Create / edit / delete forms | `canEdit` (admin or Settings access) |
+| Delete entry / bulk delete | `canEdit` |
+| See decrypted sensitive/password values (else `*****`) | Admin or `sensitiveData` group |
+
+> The backoffice API requires a valid backoffice login; write actions additionally require `canEdit`. The API is **not** gated by the section — the section grant only controls UI visibility.
+
+### Test Accounts (TestSite)
+
+The bundled `TestSite` ships with an unattended admin. To exercise the matrix above, create these users (all passwords are the **same as the admin account** — `Admin1234!` in the TestSite):
+
+| Email | Group(s) | Behaviour in uTPro Form |
+|---|---|---|
+| `admin@example.com` | Administrators | Everything: design forms, manage entries, view sensitive data |
+| `editor@example.com` | Editor *(+ uTPro Form section)* | View forms & entries, export CSV; **cannot** design/delete; sensitive shown as `*****` |
+| `editorSD@example.com` | Editor + `sensitiveData` *(+ uTPro Form section)* | Same as editor, **plus** can view decrypted sensitive values |
+| `adminCustom@example.com` | Admin Custom — clone of Administrators (sections incl. **Settings** + uTPro Form) | **Can design/edit/delete forms** (has Settings ⇒ `canEdit`), but sensitive values stay masked (not admin, not `sensitiveData`) |
+
+> **Key rule:** form management (`canEdit`) is granted by the **Settings** section, not by the Administrators group alone. Sensitive-data viewing is a separate lever, granted only by the Administrators group or the `sensitiveData` group.
+
+> To set up `editorSD`, create a user group with the alias `sensitiveData`, grant it the *uTPro Form* section, and add the user to both the Editor and `sensitiveData` groups.
 
 ---
 
@@ -294,41 +363,53 @@ GET /api/utpro/simple-form/entries/{alias}?skip=0&take=20
 ```
 uTPro.Feature.SimpleFormBuilder/
 ├── Controllers/
-│   ├── uTProSimpleFormApiController.cs      # Backoffice API (CRUD, entries, field types)
+│   ├── uTProSimpleFormApiController.cs      # Backoffice API (CRUD, entries, field types, permissions)
 │   └── uTProSimpleFormSubmitController.cs   # Public API (submit, render, entries)
 ├── Helpers/
-│   ├── FieldPartialResolver.cs         # Finds the right partial for each field type
-│   ├── uTProSimpleFormAssets.cs             # Resolves CSS/JS paths (local vs NuGet)
-│   └── uTProSimpleFormHtmlHelper.cs         # FieldHelper class used in partials
+│   ├── FieldPartialResolver.cs              # Finds the right partial for each field type
+│   ├── uTProSimpleFormAssets.cs             # Resolves front-end CSS/JS paths
+│   └── uTProSimpleFormHtmlHelper.cs         # FieldHelper used in partials
 ├── Migrations/
-│   └── uTProSimpleFormMigration.cs          # Creates tables + seeds sample data
+│   └── uTProSimpleFormMigration.cs          # AsyncMigrationBase: creates tables + seeds sample data
 ├── Models/
-│   └── FormModels.cs                   # All DTOs, ViewModels, and request models
+│   └── FormModels.cs                        # DTOs, ViewModels, request models
 ├── Services/
 │   └── uTProSimpleFormService.cs            # Core logic, encryption, entry management
 ├── ViewComponents/
 │   └── uTProSimpleFormViewComponent.cs      # The @Component.InvokeAsync entry point
 ├── Views/Partials/uTProSimpleForm/
-│   ├── Default.cshtml                  # Main form template
-│   └── Fields/                         # One file per field type
-│       ├── _Default.cshtml             # Fallback for standard inputs
-│       ├── textarea.cshtml
-│       ├── select.cshtml
-│       └── ...
+│   ├── Default.cshtml                        # Main form template
+│   └── Fields/                               # One file per field type (+ _Default.cshtml fallback)
 └── wwwroot/
-    ├── App_Plugins/simple-form/        # Backoffice dashboard UI
+    ├── App_Plugins/simple-form/              # Backoffice UI
+    │   ├── umbraco-package.json              # Section + sidebar + dashboard + localization manifest
+    │   ├── index.js                          # Main dashboard (list / editor / entries)
+    │   ├── sidebar.js                        # Left Forms tree (+ / ⋯ menu)
+    │   ├── bus.js                            # Event bus shared by sidebar ↔ dashboard
+    │   ├── api.js, styles.js                 # API helper + styles
+    │   ├── views/                            # list / editor / entries / detail views
+    │   └── lang/en-us.js                     # Localization
     └── uTPro/simple-form/
-        ├── css/simple-form.css         # Frontend styles
-        └── js/simple-form.js           # Client-side validation & submission
+        ├── css/simple-form.css               # Front-end styles
+        └── js/simple-form.js                 # Client-side validation & submission
 ```
+
+---
+
+## Static Assets
+
+The package serves its `wwwroot` at the site root (`StaticWebAssetBasePath = /`), so:
+
+- Backoffice assets resolve at `/App_Plugins/simple-form/...` (where Umbraco discovers the package manifest)
+- Front-end assets resolve at `/uTPro/simple-form/...`
 
 ---
 
 ## Database Tables
 
-Created automatically on first startup. No manual SQL needed.
+Created automatically on first startup.
 
-**`utpro_uTProSimpleForm`** — stores form definitions
+**`utpro_uTProSimpleForm`** — form definitions
 
 | Column | Type | Purpose |
 |---|---|---|
@@ -337,26 +418,25 @@ Created automatically on first startup. No manual SQL needed.
 | Alias | nvarchar(255) | Unique identifier used in code |
 | FieldsJson | ntext | Legacy storage (empty for new forms) |
 | GroupsJson | ntext | Groups → Columns → Fields as JSON |
-| SuccessMessage | nvarchar(1000) | Shown after successful submission |
+| SuccessMessage | nvarchar(1000) | Shown after a successful submission |
 | RedirectUrl | nvarchar(500) | Optional redirect after submission |
-| EmailTo | nvarchar(500) | Notification email recipient |
-| EmailSubject | nvarchar(500) | Notification email subject |
+| EmailTo | nvarchar(500) | Notification recipient |
+| EmailSubject | nvarchar(500) | Notification subject |
 | StoreEntries | bit | Whether to save submissions |
 | IsEnabled | bit | Active or disabled |
 | VisibleColumnsJson | ntext | Backoffice entry table config |
-| EnableRenderApi | bit | Allow public form definition API |
-| EnableEntriesApi | bit | Allow public entries API |
-| CreatedUtc | datetime | Created timestamp |
-| UpdatedUtc | datetime | Last modified timestamp |
+| EnableRenderApi | bit | Allow the public render API |
+| EnableEntriesApi | bit | Allow the public entries API |
+| CreatedUtc / UpdatedUtc | datetime | Timestamps |
 
-**`utpro_uTProSimpleFormEntry`** — stores form submissions
+**`utpro_uTProSimpleFormEntry`** — submissions
 
 | Column | Type | Purpose |
 |---|---|---|
 | Id | int (PK) | Auto-increment |
-| FormId | int | Links to utpro_uTProSimpleForm |
+| FormId | int | Links to `utpro_uTProSimpleForm` |
 | DataJson | ntext | Submitted data (sensitive fields encrypted) |
-| IpAddress | nvarchar(100) | Submitter's IP address |
+| IpAddress | nvarchar(100) | Submitter's IP |
 | UserAgent | nvarchar(500) | Submitter's browser |
 | CreatedUtc | datetime | Submission timestamp |
 
@@ -364,51 +444,13 @@ Created automatically on first startup. No manual SQL needed.
 
 ## Security
 
-- **Sensitive fields** (password type or fields marked as sensitive) are encrypted using ASP.NET Data Protection before storage
-- **Backoffice access** — only administrators can create, edit, or delete forms
-- **Sensitive data viewing** — masked by default; only users with the `sensitiveData` group or admin role can see decrypted values
-- **Entry deletion** — admin only
-- **Public APIs** — disabled by default per form; must be explicitly enabled
-
----
-
-## Roles & Permissions
-
-The backoffice UI lives in its own top-level **uTPro Form** section. Two things govern access:
-
-1. **Section visibility** — a user only sees the **uTPro Form** menu item if their User Group is granted that section (Users → User groups → *group* → Sections → Choose → *uTPro Form*). This is independent of the Settings section.
-2. **Action permissions** — driven by the user, not by the section:
-   - `isAdmin` = member of the **Administrators** group.
-   - `canViewSensitive` = admin **or** member of a group whose alias is `sensitiveData`.
-
-| Capability | Required permission |
-|---|---|
-| See the **uTPro Form** menu | Group granted the *uTPro Form* section |
-| View form list, view entries, view entry detail | Any backoffice user with the section |
-| Export entries to CSV | Any user who can view entries (not admin-only) |
-| Create / edit / delete forms (design) | **Admin** |
-| Delete entry / bulk delete | **Admin** |
-| See decrypted sensitive/password values (others see `*****`) | **Admin** or `sensitiveData` group |
-
-> **Note:** Having the *Settings* section does **not** grant form-design rights. Designing forms requires the Administrators group. The API endpoints require a valid backoffice login (write actions additionally require admin), but they are not gated by the section — the section grant only controls UI visibility.
-
-### Test Accounts (TestSite)
-
-The bundled `uTPro.Feature.SimpleFormBuilder.TestSite` ships with an unattended admin. To exercise the role matrix above, create these users (or use them if already seeded). All passwords are the **same as the admin account** (`Admin1234!` in the TestSite).
-
-| Email | Group(s) | What they can do |
-|---|---|---|
-| `admin@example.com` | Administrators | Everything: design forms, manage entries, view sensitive data |
-| `editor@example.com` | Editor *(+ uTPro Form section)* | View forms & entries, export CSV; **cannot** design forms or delete; sensitive values shown as `*****` |
-| `editorSD@example.com` | Editor + `sensitiveData` *(+ uTPro Form section)* | Same as editor, **plus** can view decrypted sensitive/password values |
-| `adminCustom@example.com` | Admin Custom — a clone of Administrators with custom sections (Content, Media, Library, Settings, Users, Members, Translation, uTPro Form) | Sees the **uTPro Form** menu and can view forms & entries + export CSV, but **cannot** design forms, delete, or view sensitive data |
-
-> **Important — broad section access is not the same as admin rights.** `adminCustom` can open almost every section, yet inside uTPro Form it behaves like an editor. The package gates design/delete/sensitive-data on membership of the built-in **Administrators** group (`user.IsAdmin()`), **not** on how many sections a group has. A custom group cloned from Administrators uses a different alias, so `IsAdmin()` returns `false` for it.
-
-> To set up `editorSD`, create a User Group with the alias `sensitiveData`, grant it the *uTPro Form* section, and add the user to both the Editor and `sensitiveData` groups.
+- **Sensitive fields** (password type or fields marked sensitive) are encrypted via ASP.NET Data Protection before storage and masked in the UI by default.
+- **Form management** (create/edit/delete, delete entries) requires `canEdit` (admin or Settings access).
+- **Sensitive data viewing** requires admin or the `sensitiveData` group.
+- **Public APIs** are disabled by default per form and must be explicitly enabled.
 
 ---
 
 ## Migration Note
 
-The database migration runs automatically on application startup via Umbraco's migration system. If you need to re-run it on a fresh database, delete the `uTPro.uTProSimpleForm` key from the `umbracoKeyValue` table.
+The migration runs automatically on startup via Umbraco's migration system. It is implemented with `AsyncMigrationBase` (compatible with Umbraco 16–18). To re-run it on a fresh database, delete the `uTPro.uTProSimpleForm` key from the `umbracoKeyValue` table.
