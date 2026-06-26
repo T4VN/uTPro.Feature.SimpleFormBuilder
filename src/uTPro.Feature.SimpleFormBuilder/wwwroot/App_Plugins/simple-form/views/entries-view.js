@@ -5,7 +5,7 @@ import { html, nothing } from '@umbraco-cms/backoffice/external/lit';
  * @param {object} host - the dashboard element
  */
 export function renderEntries(host) {
-    const isAdmin = host._permissions?.isAdmin;
+    const isAdmin = host._permissions?.canEdit;
     const form = host._forms.find(f => f.id === host._viewFormId);
     const formName = form?.name || 'Form';
     const pages = Math.max(1, Math.ceil(host._entryTotal / 20));
@@ -18,10 +18,9 @@ export function renderEntries(host) {
     const allSelected = host._entries.length > 0 && host._selectedEntries.length === host._entries.length;
 
     return html`
-        <uui-box>
             <!-- Header -->
             <div class="toolbar">
-                <uui-button look="outline" @click=${() => { host._view = 'list'; host._selectedEntries = []; }}>&#8592; Back</uui-button>
+                <uui-button look="outline" @click=${() => host._backToList()}>&#8592; Back</uui-button>
                 <h2>Entries: ${formName}</h2>
                 <div class="toolbar-right">
                     <span class="page-info">${host._entryTotal} entries</span>
@@ -96,5 +95,5 @@ export function renderEntries(host) {
                         @click=${() => { host._entrySkip += 20; host._loadEntries(); }}>Next</uui-button>
                 </div>` : nothing}
             `}
-        </uui-box>`;
+        `;
 }

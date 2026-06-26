@@ -1,22 +1,46 @@
 {
   "name": "uTPro.SimpleForm",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "extensions": [
+    {
+      "type": "section",
+      "alias": "uTPro.Section.Form",
+      "name": "uTPro Form Section",
+      "weight": 50,
+      "meta": {
+        "label": "#simpleForm_title",
+        "pathname": "utpro-form"
+      }
+    },
+    {
+      "type": "sectionSidebarApp",
+      "alias": "uTPro.SimpleForm.Sidebar",
+      "name": "uTPro Form Sidebar",
+      "element": "/App_Plugins/simple-form/sidebar.js",
+      "elementName": "utpro-simple-form-sidebar",
+      "weight": 100,
+      "conditions": [
+        {
+          "alias": "Umb.Condition.SectionAlias",
+          "match": "uTPro.Section.Form"
+        }
+      ]
+    },
     {
       "type": "dashboard",
       "alias": "uTPro.SimpleForm.Dashboard",
-      "name": "Simple Form Builder",
+      "name": "uTPro Form Dashboard",
       "element": "/App_Plugins/simple-form/index.js",
       "elementName": "utpro-simple-form-dashboard",
-      "weight": 15,
+      "weight": 10,
       "meta": {
         "label": "#simpleForm_title",
-        "pathname": "simple-form"
+        "pathname": "overview"
       },
       "conditions": [
         {
           "alias": "Umb.Condition.SectionAlias",
-          "match": "Umb.Section.Settings"
+          "match": "uTPro.Section.Form"
         }
       ]
     },

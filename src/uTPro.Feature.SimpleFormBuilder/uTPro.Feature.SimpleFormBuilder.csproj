@@ -1,31 +1,44 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <!-- net9.0 -> Umbraco 16, net10.0 -> Umbraco 17 & 18 -->
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
 
     <!-- NuGet package metadata -->
     <PackageId>uTPro.Feature.SimpleFormBuilder</PackageId>
-    <Version>1.0.0</Version>
+    <Title>uTPro Simple Form Builder for Umbraco (16, 17, 18)</Title>
+    <Version>2.0.0</Version>
     <Authors>T4VN</Authors>
     <Company>T4VN</Company>
-    <Description>Lightweight form builder for Umbraco 16+ - create, manage, and render dynamic forms from the backoffice. Supports 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language, and custom field extensibility.</Description>
+    <Description>Lightweight form builder for Umbraco 16, 17 and 18 - create, manage, and render dynamic forms from the backoffice. Supports 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language, and custom field extensibility.</Description>
     <PackageTags>umbraco;umbraco-marketplace;form;form-builder;umbraco-plugin;cms</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</PackageProjectUrl>
     <RepositoryUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>v2.0.0: Added support for Umbraco 16, 17 and 18 (multi-target net9.0/net10.0).</PackageReleaseNotes>
 
+    <!-- Serve wwwroot at the site root so App_Plugins/simple-form (backoffice manifest)
+         and uTPro/simple-form (front-end assets) resolve at their declared absolute paths. -->
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageOutputPath>..\..\Build</PackageOutputPath>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Umbraco.Cms" Version="16.*" />
+  <!-- Umbraco 16 (runs on .NET 9) -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Umbraco.Cms" Version="[16.0.0, 17.0.0)" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="9.*" />
+  </ItemGroup>
+
+  <!-- Umbraco 17 and 18 (run on .NET 10) -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Umbraco.Cms" Version="[17.0.0, 19.0.0)" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.*" />
   </ItemGroup>
 
   <!-- Include README, icon and marketplace manifest in the NuGet package -->

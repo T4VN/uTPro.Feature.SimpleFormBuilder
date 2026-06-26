@@ -13,6 +13,7 @@ import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 
 import { API, apiPost } from './api.js';
 import { dashboardStyles } from './styles.js';
+import { formBus } from './bus.js';
 import { renderList } from './views/list-view.js';
 import { renderEditor } from './views/editor-view.js';
 import { renderEntries } from './views/entries-view.js';
@@ -37,6 +38,7 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         _detailEntry: { type: Object, state: true },
         _permissions: { type: Object, state: true },
         _search: { type: String, state: true },
+        _listSearch: { type: String, state: true },
         _dateFrom: { type: String, state: true },
         _dateTo: { type: String, state: true },
         _showColumnSettings: { type: Boolean, state: true },
@@ -68,8 +70,9 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         this._success = '';
         this._selectedEntries = [];
         this._detailEntry = null;
-        this._permissions = { isAdmin: false, canViewSensitive: false };
+        this._permissions = { isAdmin: false, canEdit: false, canViewSensitive: false };
         this._search = '';
+        this._listSearch = '';
         this._dateFrom = '';
         this._dateTo = '';
         this._showColumnSettings = false;
@@ -84,9 +87,39 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
 
     async connectedCallback() {
         super.connectedCallback();
+        // Relay sidebar intents to this dashboard (guards prevent feedback loops
+        // when the dashboard echoes its own selection back onto the bus).
+        this._busNew = () => {
+            if (this._view === 'edit' && this._editForm && this._editForm.id === 0) return;
+            this._newForm();
+        };        this._busSelect = (e) => {
+            const id = Number(e.detail) || 0;
+            if (!id) return;
+            // Users who can edit open the editor; everyone else (Entries is their
+            // only action) jumps straight to the Entries view.
+            if (this._permissions?.canEdit) {
+                if (this._view === 'edit' && this._editForm?.id === id) return;
+                this._editExisting(id);
+            } else {
+                if (this._view === 'entries' && this._viewFormId === id) return;
+                this._viewEntries(id);
+            }
+        };
+        formBus.addEventListener('new', this._busNew);
+        formBus.addEventListener('select', this._busSelect);
+        this._busNotify = (e) => this._msg(e.detail);
+        formBus.addEventListener('notify', this._busNotify);
+
         await this._loadPermissions();
         await this._loadForms();
         await this._loadFieldTypes();
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        formBus.removeEventListener('new', this._busNew);
+        formBus.removeEventListener('select', this._busSelect);
+        formBus.removeEventListener('notify', this._busNotify);
     }
 
     // ── API helper ──
@@ -105,7 +138,7 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         try {
             this._permissions = await this._api(API + '/permissions');
         } catch {
-            this._permissions = { isAdmin: false, canViewSensitive: false };
+            this._permissions = { isAdmin: false, canEdit: false, canViewSensitive: false };
         }
     }
 
@@ -115,6 +148,8 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         try { this._forms = await this._api(API + '/list'); }
         catch (e) { this._msg(e.message, true); }
         this._loading = false;
+        // Keep the sidebar list in sync.
+        formBus.refresh();
     }
 
     async _loadFieldTypes() {
@@ -129,6 +164,8 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
             storeEntries: true, isEnabled: true
         };
         this._view = 'edit';
+        // Sync sidebar (clear active highlight for a brand-new form).
+        formBus.requestNew();
     }
 
     async _editExisting(id) {
@@ -138,7 +175,17 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
             const res = await this._api(API + '/entries', { formId: id, skip: 0, take: 1 });
             this._entryCount = res.total || 0;
             this._view = 'edit';
+            // Sync sidebar highlight regardless of where the open was triggered.
+            formBus.setActive(id);
         } catch (e) { this._msg(e.message, true); }
+    }
+
+    // Return to the form list and clear the sidebar highlight (id 0 = none).
+    _backToList() {
+        this._view = 'list';
+        this._showColumnSettings = false;
+        this._selectedEntries = [];
+        formBus.setActive(0);
     }
 
     async _saveForm() {
@@ -160,7 +207,7 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
             await this._api(API + '/delete', { id });
             this._msg('Deleted');
             await this._loadForms();
-            if (this._editForm?.id === id) { this._editForm = null; this._view = 'list'; }
+            if (this._editForm?.id === id) { this._editForm = null; this._view = 'list'; formBus.selectForm(0); }
         } catch (e) { this._msg(e.message, true); }
     }
 
@@ -329,6 +376,8 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         this._dateTo = '';
         this._selectedEntries = [];
         this._view = 'entries';
+        // Highlight the corresponding form in the sidebar.
+        formBus.setActive(formId);
         await this._loadEntries();
     }
 

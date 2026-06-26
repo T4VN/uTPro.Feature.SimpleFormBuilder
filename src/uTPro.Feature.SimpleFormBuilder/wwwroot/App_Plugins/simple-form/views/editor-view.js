@@ -8,32 +8,30 @@ export function renderEditor(host) {
     if (!f.groups) f.groups = [];
 
     return html`
-        <uui-box>
-            <div class="toolbar">
-                <uui-button look="outline" @click=${() => { host._view = 'list'; host._showColumnSettings = false; }}>&#8592; Back</uui-button>
-                <h2>${f.id ? 'Edit' : 'New'} Form</h2>
-                <div class="toolbar-right">
-                    ${f.id ? html`
-                        <uui-button look="outline" compact @click=${() => host._viewEntries(f.id)}>Entries (${host._entryCount ?? 0})</uui-button>
-                        <uui-button look="${showSettings ? 'primary' : 'outline'}" compact
-                            @click=${() => { host._showColumnSettings = !host._showColumnSettings; host.requestUpdate(); }}>&#9881; Settings</uui-button>
-                    ` : nothing}
-                    <uui-button look="primary" @click=${() => host._saveForm()}>Save Form</uui-button>
-                </div>
+        <div class="toolbar">
+            <uui-button look="outline" @click=${() => host._backToList()}>&#8592; Back</uui-button>
+            <h2>${f.id ? html`Edit: ${f.name}` : 'New Form'}</h2>
+            <div class="toolbar-right">
+                ${f.id ? html`
+                    <uui-button look="outline" compact @click=${() => host._viewEntries(f.id)}>Entries (${host._entryCount ?? 0})</uui-button>
+                    <uui-button look="${showSettings ? 'primary' : 'outline'}" compact
+                        @click=${() => { host._showColumnSettings = !host._showColumnSettings; host.requestUpdate(); }}>&#9881; Settings</uui-button>
+                ` : nothing}
+                <uui-button look="primary" @click=${() => host._saveForm()}>Save Form</uui-button>
             </div>
-            ${showSettings && f.id ? html`
-                ${_renderEmbedSettings(host, f)}
-                ${_renderGeneralSettings(host, f)}
-                ${_renderColumnSettings(host, f)}
-            ` : nothing}
-            ${!f.id ? _renderGeneralSettings(host, f) : nothing}
-            <div class="section-header">
-                <h3>Groups</h3>
-                <uui-button look="primary" compact @click=${() => host._addGroup()}>+ Add Group</uui-button>
-            </div>
-            ${f.groups.length === 0 ? html`<div class="empty">No groups yet. Add a group to organise fields.</div>` : nothing}
-            ${f.groups.map((group, gIdx) => _renderGroupCard(host, group, gIdx))}
-        </uui-box>
+        </div>
+        ${showSettings && f.id ? html`
+            ${_renderEmbedSettings(host, f)}
+            ${_renderGeneralSettings(host, f)}
+            ${_renderColumnSettings(host, f)}
+        ` : nothing}
+        ${!f.id ? _renderGeneralSettings(host, f) : nothing}
+        <div class="section-header">
+            <h3>Groups</h3>
+            <uui-button look="primary" compact @click=${() => host._addGroup()}>+ Add Group</uui-button>
+        </div>
+        ${f.groups.length === 0 ? html`<div class="empty">No groups yet. Add a group to organise fields.</div>` : nothing}
+        ${f.groups.map((group, gIdx) => _renderGroupCard(host, group, gIdx))}
         ${host._typePickerIdx >= 0 ? _renderTypePicker(host) : nothing}
         ${host._fieldSettingsLoc ? _renderFieldSettingsDialog(host) : nothing}`;
 }

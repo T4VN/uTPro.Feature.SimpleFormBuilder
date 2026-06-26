@@ -19,6 +19,7 @@ public class uTProSimpleFormApiController(
     public IActionResult Permissions() => Ok(new
     {
         isAdmin = IsCurrentUserAdmin(),
+        canEdit = CanCurrentUserManageForms(),
         canViewSensitive = CanCurrentUserViewSensitiveData()
     });
 
@@ -37,8 +38,8 @@ public class uTProSimpleFormApiController(
     [HttpPost("save")]
     public IActionResult Save([FromBody] SaveFormRequest request)
     {
-        if (!IsCurrentUserAdmin())
-            return Unauthorized(new { message = "Only administrators can edit forms" });
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to edit forms" });
 
         var (success, message, id) = formService.SaveForm(request);
         return success ? Ok(new { message, id }) : BadRequest(new { message });
@@ -47,8 +48,8 @@ public class uTProSimpleFormApiController(
     [HttpPost("delete")]
     public IActionResult Delete([FromBody] DeleteFormRequest request)
     {
-        if (!IsCurrentUserAdmin())
-            return Unauthorized(new { message = "Only administrators can delete forms" });
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to delete forms" });
 
         var (success, message) = formService.DeleteForm(request.Id);
         return success ? Ok(new { message }) : BadRequest(new { message });
@@ -68,8 +69,8 @@ public class uTProSimpleFormApiController(
     [HttpPost("delete-entry")]
     public IActionResult DeleteEntry([FromBody] DeleteFormRequest request)
     {
-        if (!IsCurrentUserAdmin())
-            return Unauthorized(new { message = "Only administrators can delete entries" });
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to delete entries" });
 
         var (success, message) = formService.DeleteEntry(request.Id);
         return success ? Ok(new { message }) : BadRequest(new { message });
@@ -109,6 +110,20 @@ public class uTProSimpleFormApiController(
         {
             var user = backOfficeSecurityAccessor.BackOfficeSecurity?.CurrentUser;
             return user?.IsAdmin() == true;
+        }
+        catch { return false; }
+    }
+
+    // Form management is allowed for admins OR any user whose group grants
+    // access to the Settings section (covers custom "admin-like" groups).
+    private bool CanCurrentUserManageForms()
+    {
+        try
+        {
+            var user = backOfficeSecurityAccessor.BackOfficeSecurity?.CurrentUser;
+            if (user == null) return false;
+            if (user.IsAdmin()) return true;
+            return user.AllowedSections.Contains(Umbraco.Cms.Core.Constants.Applications.Settings);
         }
         catch { return false; }
     }

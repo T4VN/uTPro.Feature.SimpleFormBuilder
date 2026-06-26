@@ -30,7 +30,7 @@ Drop this line into any Razor view or block component:
 @await Component.InvokeAsync("uTProSimpleForm", new { alias = "contact-us" })
 ```
 
-The `alias` matches the form you created in the backoffice (Settings → Simple Form).
+The `alias` matches the form you created in the backoffice (the **uTPro Form** section).
 
 ### Optional Parameters
 
@@ -59,7 +59,7 @@ To customize the layout for a specific form, just create a file matching its ali
 
 ## Creating Forms in the Backoffice
 
-1. Go to **Settings → Simple Form** in the Umbraco backoffice
+1. Go to the **uTPro Form** section in the Umbraco backoffice (top menu bar)
 2. Click **New Form**
 3. Give it a **Name** and **Alias** (the alias is what you use in code)
 4. Add **Groups** to organize your fields into sections
@@ -369,6 +369,43 @@ Created automatically on first startup. No manual SQL needed.
 - **Sensitive data viewing** — masked by default; only users with the `sensitiveData` group or admin role can see decrypted values
 - **Entry deletion** — admin only
 - **Public APIs** — disabled by default per form; must be explicitly enabled
+
+---
+
+## Roles & Permissions
+
+The backoffice UI lives in its own top-level **uTPro Form** section. Two things govern access:
+
+1. **Section visibility** — a user only sees the **uTPro Form** menu item if their User Group is granted that section (Users → User groups → *group* → Sections → Choose → *uTPro Form*). This is independent of the Settings section.
+2. **Action permissions** — driven by the user, not by the section:
+   - `isAdmin` = member of the **Administrators** group.
+   - `canViewSensitive` = admin **or** member of a group whose alias is `sensitiveData`.
+
+| Capability | Required permission |
+|---|---|
+| See the **uTPro Form** menu | Group granted the *uTPro Form* section |
+| View form list, view entries, view entry detail | Any backoffice user with the section |
+| Export entries to CSV | Any user who can view entries (not admin-only) |
+| Create / edit / delete forms (design) | **Admin** |
+| Delete entry / bulk delete | **Admin** |
+| See decrypted sensitive/password values (others see `*****`) | **Admin** or `sensitiveData` group |
+
+> **Note:** Having the *Settings* section does **not** grant form-design rights. Designing forms requires the Administrators group. The API endpoints require a valid backoffice login (write actions additionally require admin), but they are not gated by the section — the section grant only controls UI visibility.
+
+### Test Accounts (TestSite)
+
+The bundled `uTPro.Feature.SimpleFormBuilder.TestSite` ships with an unattended admin. To exercise the role matrix above, create these users (or use them if already seeded). All passwords are the **same as the admin account** (`Admin1234!` in the TestSite).
+
+| Email | Group(s) | What they can do |
+|---|---|---|
+| `admin@example.com` | Administrators | Everything: design forms, manage entries, view sensitive data |
+| `editor@example.com` | Editor *(+ uTPro Form section)* | View forms & entries, export CSV; **cannot** design forms or delete; sensitive values shown as `*****` |
+| `editorSD@example.com` | Editor + `sensitiveData` *(+ uTPro Form section)* | Same as editor, **plus** can view decrypted sensitive/password values |
+| `adminCustom@example.com` | Admin Custom — a clone of Administrators with custom sections (Content, Media, Library, Settings, Users, Members, Translation, uTPro Form) | Sees the **uTPro Form** menu and can view forms & entries + export CSV, but **cannot** design forms, delete, or view sensitive data |
+
+> **Important — broad section access is not the same as admin rights.** `adminCustom` can open almost every section, yet inside uTPro Form it behaves like an editor. The package gates design/delete/sensitive-data on membership of the built-in **Administrators** group (`user.IsAdmin()`), **not** on how many sections a group has. A custom group cloned from Administrators uses a different alias, so `IsAdmin()` returns `false` for it.
+
+> To set up `editorSD`, create a User Group with the alias `sensitiveData`, grant it the *uTPro Form* section, and add the user to both the Editor and `sensitiveData` groups.
 
 ---
 

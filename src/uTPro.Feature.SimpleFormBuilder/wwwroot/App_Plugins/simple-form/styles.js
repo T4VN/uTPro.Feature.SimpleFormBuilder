@@ -3,6 +3,10 @@ import { css } from '@umbraco-cms/backoffice/external/lit';
 export const dashboardStyles = css`
     :host { display: block; padding: 20px; }
 
+    /* ── List toolbar (Create + filter) ── */
+    .list-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .list-toolbar .list-filter { flex: 1; max-width: 420px; }
+
     /* ── Toolbar ── */
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
     .toolbar h2 { margin: 0; font-size: 1.3rem; }
@@ -18,7 +22,7 @@ export const dashboardStyles = css`
     .empty { text-align: center; padding: 40px; color: #888; font-style: italic; }
 
     /* ── List view ── */
-    .link { color: var(--uui-color-interactive, #1b264f); cursor: pointer; font-weight: 500; text-decoration: none; }
+    .link { color: var(--uui-color-interactive, #1b264f); cursor: pointer; font-weight: 500; text-decoration: none; background: none; border: none; padding: 0; font: inherit; text-align: left; }
     .link:hover { text-decoration: underline; }
     .badge { padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; font-weight: 500; }
     .badge.on { background: #e8fde8; color: #27ae60; }

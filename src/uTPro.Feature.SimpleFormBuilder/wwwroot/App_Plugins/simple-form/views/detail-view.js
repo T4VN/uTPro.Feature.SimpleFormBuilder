@@ -8,7 +8,7 @@ export function renderDetail(host) {
     const s = host._detailEntry;
     if (!s) return nothing;
 
-    const isAdmin = host._permissions?.isAdmin;
+    const isAdmin = host._permissions?.canEdit;
     const entries = Object.entries(s.data || {});
 
     return html`

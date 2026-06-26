@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "uTPro.Feature.SimpleFormBuilder.TestSite": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54760;http://localhost:54761"
+    }
+  }
+}

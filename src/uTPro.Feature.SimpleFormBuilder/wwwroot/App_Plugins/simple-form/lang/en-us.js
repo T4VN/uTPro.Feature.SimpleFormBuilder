@@ -1,5 +1,5 @@
 export default {
     simpleForm: {
-        title: "Form Builder",
+        title: "uTPro Form",
     }
 }

@@ -13,11 +13,11 @@ namespace uTPro.Feature.SimpleFormBuilder.Migrations;
 /// Creates the uTProSimpleForm tables and seeds the default "Contact Us" form.
 /// This is a single, clean migration that produces the final schema in one step.
 /// </summary>
-public class InituTProSimpleForm : MigrationBase
+public class InituTProSimpleForm : AsyncMigrationBase
 {
     public InituTProSimpleForm(IMigrationContext context) : base(context) { }
 
-    protected override void Migrate()
+    protected override Task MigrateAsync()
     {
         // ── Tables ──
 
@@ -106,6 +106,8 @@ public class InituTProSimpleForm : MigrationBase
             false,                                                          // EnableEntriesApi
             now,                                                            // CreatedUtc
             now);                                                           // UpdatedUtc
+
+        return Task.CompletedTask;
     }
 }
 
@@ -142,20 +144,18 @@ public class uTProSimpleFormMigrationHandler
         _runtimeState = runtimeState;
     }
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         Umbraco.Cms.Core.Notifications.UmbracoApplicationStartedNotification notification,
         CancellationToken cancellationToken)
     {
         if (_runtimeState.Level < RuntimeLevel.Run)
-            return Task.CompletedTask;
+            return;
 
         var plan = new MigrationPlan("uTPro.uTProSimpleForm");
         plan.From(string.Empty)
             .To<InituTProSimpleForm>("utprosimpleform-init");
 
         var upgrader = new Upgrader(plan);
-        upgrader.Execute(_migrationPlanExecutor, _coreScopeProvider, _keyValueService);
-
-        return Task.CompletedTask;
+        await upgrader.ExecuteAsync(_migrationPlanExecutor, _coreScopeProvider, _keyValueService);
     }
 }
