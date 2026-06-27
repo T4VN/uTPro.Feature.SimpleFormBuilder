@@ -21,14 +21,16 @@ export function renderList(host) {
             ${canEdit ? html`
                 <uui-button look="primary" @click=${() => host._newForm()}>Create</uui-button>
             ` : nothing}
-            <uui-input
-                class="list-filter"
-                type="search"
-                placeholder="Type to filter..."
-                label="Filter forms"
-                .value=${host._listSearch || ''}
-                @input=${(e) => { host._listSearch = e.target.value; }}>
-            </uui-input>
+            ${host._forms.length ? html`
+                <uui-input
+                    class="list-filter"
+                    type="search"
+                    placeholder="Type to filter..."
+                    label="Filter forms"
+                    .value=${host._listSearch || ''}
+                    @input=${(e) => { host._listSearch = e.target.value; }}>
+                </uui-input>
+            ` : nothing}
         </div>
 
         ${host._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}

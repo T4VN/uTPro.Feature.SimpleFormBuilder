@@ -143,9 +143,6 @@ export class UtproSimpleFormSidebar extends UmbLitElement {
                 ${this._loading && !this._forms.length
                     ? html`<div class="muted"><uui-loader></uui-loader></div>`
                     : nothing}
-                ${!this._loading && !this._forms.length
-                    ? html`<div class="muted">No forms yet.</div>`
-                    : nothing}
                 ${this._forms.map(f => html`
                     <uui-menu-item
                         label=${f.name}
