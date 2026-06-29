@@ -21,15 +21,15 @@ public class InituTProSimpleForm : AsyncMigrationBase
     {
         // ── Tables ──
 
-        if (TableExists("utpro_uTProSimpleFormEntry"))
-            Delete.Table("utpro_uTProSimpleFormEntry").Do();
-        if (TableExists("utpro_uTProSimpleForm"))
-            Delete.Table("utpro_uTProSimpleForm").Do();
+        if (TableExists("uTProSimpleFormEntry"))
+            Delete.Table("uTProSimpleFormEntry").Do();
+        if (TableExists("uTProSimpleForm"))
+            Delete.Table("uTProSimpleForm").Do();
 
-        Create.Table("utpro_uTProSimpleForm")
-            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_utpro_uTProSimpleForm")
+        Create.Table("uTProSimpleForm")
+            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_uTProSimpleForm")
             .WithColumn("Name").AsString(255).NotNullable()
-            .WithColumn("Alias").AsString(255).NotNullable().Unique("IX_utpro_uTProSimpleForm_Alias")
+            .WithColumn("Alias").AsString(255).NotNullable().Unique("IX_uTProSimpleForm_Alias")
             .WithColumn("FieldsJson").AsCustom("NTEXT").Nullable()
             .WithColumn("GroupsJson").AsCustom("NTEXT").Nullable()
             .WithColumn("SuccessMessage").AsString(1000).Nullable()
@@ -41,12 +41,13 @@ public class InituTProSimpleForm : AsyncMigrationBase
             .WithColumn("VisibleColumnsJson").AsCustom("NTEXT").Nullable()
             .WithColumn("EnableRenderApi").AsBoolean().WithDefaultValue(false)
             .WithColumn("EnableEntriesApi").AsBoolean().WithDefaultValue(false)
+            .WithColumn("ShowInPicker").AsBoolean().WithDefaultValue(true)
             .WithColumn("CreatedUtc").AsDateTime().NotNullable()
             .WithColumn("UpdatedUtc").AsDateTime().NotNullable()
             .Do();
 
-        Create.Table("utpro_uTProSimpleFormEntry")
-            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_utpro_uTProSimpleFormEntry")
+        Create.Table("uTProSimpleFormEntry")
+            .WithColumn("Id").AsInt32().NotNullable().Identity().PrimaryKey("PK_uTProSimpleFormEntry")
             .WithColumn("FormId").AsInt32().NotNullable()
             .WithColumn("DataJson").AsCustom("NTEXT").Nullable()
             .WithColumn("IpAddress").AsString(100).Nullable()
@@ -66,7 +67,7 @@ public class InituTProSimpleForm : AsyncMigrationBase
         {""id"":""f1"",""type"":""text"",""label"":""Name"",""name"":""name"",""placeholder"":""Name"",""required"":true,""sortOrder"":0,""validationMessage"":""Please enter your name""}
       ]},
       {""id"":""g1c2"",""width"":6,""fields"":[
-        {""id"":""f2"",""type"":""email"",""label"":""Email"",""name"":""email"",""placeholder"":""Email"",""required"":true,""sortOrder"":0,""validationMessage"":""Please enter a valid email""}
+        {""id"":""f2"",""type"":""email"",""label"":""Email"",""name"":""email"",""placeholder"":""Email"",""required"":true,""isSensitive"":true,""sortOrder"":0,""validationMessage"":""Please enter a valid email""}
       ]}
     ]
   },
@@ -81,7 +82,7 @@ public class InituTProSimpleForm : AsyncMigrationBase
 ]";
 
         Context.Database.Execute(@"
-            INSERT INTO utpro_uTProSimpleForm
+            INSERT INTO uTProSimpleForm
                 (Name, Alias, FieldsJson, GroupsJson,
                  SuccessMessage, RedirectUrl, EmailTo, EmailSubject,
                  StoreEntries, IsEnabled, VisibleColumnsJson,
@@ -107,6 +108,25 @@ public class InituTProSimpleForm : AsyncMigrationBase
             now,                                                            // CreatedUtc
             now);                                                           // UpdatedUtc
 
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Adds the ShowInPicker column for installs created before the content Form Picker feature.
+/// Existing forms default to visible in the picker (backward compatible).
+/// </summary>
+public class AddShowInPickerColumn : AsyncMigrationBase
+{
+    public AddShowInPickerColumn(IMigrationContext context) : base(context) { }
+
+    protected override Task MigrateAsync()
+    {
+        if (!ColumnExists("uTProSimpleForm", "ShowInPicker"))
+        {
+            Create.Column("ShowInPicker").OnTable("uTProSimpleForm")
+                .AsBoolean().NotNullable().WithDefaultValue(true).Do();
+        }
         return Task.CompletedTask;
     }
 }
@@ -153,7 +173,8 @@ public class uTProSimpleFormMigrationHandler
 
         var plan = new MigrationPlan("uTPro.uTProSimpleForm");
         plan.From(string.Empty)
-            .To<InituTProSimpleForm>("utprosimpleform-init");
+            .To<InituTProSimpleForm>("utprosimpleform-init")
+            .To<AddShowInPickerColumn>("utprosimpleform-showinpicker");
 
         var upgrader = new Upgrader(plan);
         await upgrader.ExecuteAsync(_migrationPlanExecutor, _coreScopeProvider, _keyValueService);

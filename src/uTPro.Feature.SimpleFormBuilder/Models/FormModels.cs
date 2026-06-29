@@ -5,7 +5,7 @@ namespace uTPro.Feature.SimpleFormBuilder.Models;
 
 // ── Database DTOs ──
 
-[TableName("utpro_uTProSimpleForm")]
+[TableName("uTProSimpleForm")]
 [PrimaryKey("Id", AutoIncrement = true)]
 public class uTProSimpleFormDto
 {
@@ -23,11 +23,13 @@ public class uTProSimpleFormDto
     public string? VisibleColumnsJson { get; set; }
     public bool EnableRenderApi { get; set; }
     public bool EnableEntriesApi { get; set; }
+    /// <summary>When true, the form appears in the content "Form Picker" data type list.</summary>
+    public bool ShowInPicker { get; set; } = true;
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
 }
 
-[TableName("utpro_uTProSimpleFormEntry")]
+[TableName("uTProSimpleFormEntry")]
 [PrimaryKey("Id", AutoIncrement = true)]
 public class uTProSimpleFormEntryDto
 {
@@ -58,8 +60,12 @@ public class FormViewModel
     public List<string>? VisibleColumns { get; set; }
     public bool EnableRenderApi { get; set; }
     public bool EnableEntriesApi { get; set; }
+    /// <summary>When true, the form appears in the content "Form Picker" data type list.</summary>
+    public bool ShowInPicker { get; set; } = true;
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
+    /// <summary>Number of stored entries for this form (populated by GetAllForms for the list view).</summary>
+    public int EntryCount { get; set; }
 }
 
 /// <summary>
@@ -134,6 +140,8 @@ public class SaveFormRequest
     public List<string>? VisibleColumns { get; set; }
     public bool EnableRenderApi { get; set; }
     public bool EnableEntriesApi { get; set; }
+    /// <summary>When true, the form appears in the content "Form Picker" data type list.</summary>
+    public bool ShowInPicker { get; set; } = true;
 }
 
 public class DeleteFormRequest
@@ -144,6 +152,31 @@ public class DeleteFormRequest
 public class GetFormRequest
 {
     public int Id { get; set; }
+}
+
+/// <summary>
+/// Portable representation of a form definition (no Id, no entries, no timestamps),
+/// used for import/export between sites/environments.
+/// </summary>
+public class FormExportModel
+{
+    public string ExportVersion { get; set; } = "1.0";
+    public DateTime ExportedUtc { get; set; } = DateTime.UtcNow;
+    public string Name { get; set; } = string.Empty;
+    public string Alias { get; set; } = string.Empty;
+    public List<FormFieldViewModel> Fields { get; set; } = [];
+    public List<FormGroupViewModel> Groups { get; set; } = [];
+    public string? SuccessMessage { get; set; }
+    public string? RedirectUrl { get; set; }
+    public string? EmailTo { get; set; }
+    public string? EmailSubject { get; set; }
+    public bool StoreEntries { get; set; } = true;
+    public bool IsEnabled { get; set; } = true;
+    public List<string>? VisibleColumns { get; set; }
+    public bool EnableRenderApi { get; set; }
+    public bool EnableEntriesApi { get; set; }
+    /// <summary>When true, the form appears in the content "Form Picker" data type list.</summary>
+    public bool ShowInPicker { get; set; } = true;
 }
 
 public class SubmitFormRequest

@@ -1,25 +1,42 @@
 // ── Entry point: Simple Form Dashboard ──
-// Views and styles are split into separate files for maintainability.
-//   api.js              – API helper & constants
-//   styles.js           – All CSS styles
-//   views/list-view.js  – Form list
-//   views/editor-view.js – Form editor
-//   views/entries-view.js – Entries table
-//   views/detail-view.js – Entry detail overlay
+// The dashboard is composed from small, focused modules:
+//   api.js                     – API helper & constants
+//   bus.js                     – cross-component event bus (sidebar ↔ dashboard)
+//   styles.js                  – all CSS
+//   date-range.js              – pure date helpers (quick range)
+//   mixins/url-state.mixin.js  – deep-linking (URL ↔ view/filters)
+//   mixins/form-actions.mixin.js – form CRUD + import/export
+//   mixins/builder.mixin.js    – group/column/field/option editing
+//   mixins/entries.mixin.js    – entries loading, filtering, selection, CSV
+//   views/*.js                 – presentational render functions
+//
+// This file owns only: reactive state, lifecycle wiring, shared helpers
+// (_api / _msg), data loaders, and the top-level render switch.
 
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
+import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 
 import { API, apiPost } from './api.js';
 import { dashboardStyles } from './styles.js';
 import { formBus } from './bus.js';
+
+import { UrlStateMixin } from './mixins/url-state.mixin.js';
+import { FormActionsMixin } from './mixins/form-actions.mixin.js';
+import { BuilderMixin } from './mixins/builder.mixin.js';
+import { ClipboardMixin } from './mixins/clipboard.mixin.js';
+import { EntriesMixin } from './mixins/entries.mixin.js';
+
 import { renderList } from './views/list-view.js';
 import { renderEditor } from './views/editor-view.js';
 import { renderEntries } from './views/entries-view.js';
 import { renderDetail } from './views/detail-view.js';
 
-export class UtproSimpleFormDashboard extends UmbLitElement {
+// Compose the feature mixins onto the Umbraco Lit base element.
+const DashboardBase = EntriesMixin(ClipboardMixin(BuilderMixin(FormActionsMixin(UrlStateMixin(UmbLitElement)))));
+
+export class UtproSimpleFormDashboard extends DashboardBase {
 
     // ── Reactive properties ──
     static properties = {
@@ -32,8 +49,6 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         _entryTotal: { type: Number, state: true },
         _entrySkip: { type: Number, state: true },
         _viewFormId: { type: Number, state: true },
-        _error: { type: String, state: true },
-        _success: { type: String, state: true },
         _selectedEntries: { type: Array, state: true },
         _detailEntry: { type: Object, state: true },
         _permissions: { type: Object, state: true },
@@ -41,6 +56,7 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         _listSearch: { type: String, state: true },
         _dateFrom: { type: String, state: true },
         _dateTo: { type: String, state: true },
+        _rangeMode: { type: String, state: true },
         _showColumnSettings: { type: Boolean, state: true },
         _entryCount: { type: Number, state: true },
         _typePickerIdx: { type: Number, state: true },
@@ -48,12 +64,13 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         _typePickerGroupIdx: { type: Number, state: true },
         _typePickerColIdx: { type: Number, state: true },
         _fieldSettingsLoc: { type: Object, state: true },
+        _clip: { state: true },
     };
 
-    // ── Styles ──
     static styles = dashboardStyles;
 
     #authContext;
+    #notificationContext;
 
     constructor() {
         super();
@@ -66,8 +83,6 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         this._entryTotal = 0;
         this._entrySkip = 0;
         this._viewFormId = 0;
-        this._error = '';
-        this._success = '';
         this._selectedEntries = [];
         this._detailEntry = null;
         this._permissions = { isAdmin: false, canEdit: false, canViewSensitive: false };
@@ -75,6 +90,7 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         this._listSearch = '';
         this._dateFrom = '';
         this._dateTo = '';
+        this._rangeMode = 'month';
         this._showColumnSettings = false;
         this._entryCount = 0;
         this._typePickerIdx = -1;
@@ -82,17 +98,101 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         this._typePickerGroupIdx = -1;
         this._typePickerColIdx = -1;
         this._fieldSettingsLoc = null;
+        this._editFormSnapshot = '';
+        this._clip = null;
         this.consumeContext(UMB_AUTH_CONTEXT, (ctx) => { this.#authContext = ctx; });
+        this.consumeContext(UMB_NOTIFICATION_CONTEXT, (ctx) => { this.#notificationContext = ctx; });
     }
 
     async connectedCallback() {
         super.connectedCallback();
-        // Relay sidebar intents to this dashboard (guards prevent feedback loops
-        // when the dashboard echoes its own selection back onto the bus).
+        this.#wireBus();
+
+        // ── Unsaved-changes guards ──
+        // 1) Full reload / tab close / external URL.
+        this._beforeUnload = (e) => {
+            if (this._isDirty()) { e.preventDefault(); e.returnValue = ''; }
+        };
+        window.addEventListener('beforeunload', this._beforeUnload);
+
+        // 2) SPA navigation that LEAVES the uTPro Form section (e.g. clicking a
+        //    different Umbraco section/menu). The Navigation API lets us cancel
+        //    a same-origin route change based on the target URL. In-section moves
+        //    (Entries, sidebar form switch, etc.) stay within `utpro-form` and are
+        //    guarded by _confirmLeave() inside the navigation methods instead.
+        if (window.navigation && typeof window.navigation.addEventListener === 'function') {
+            this._navGuard = (e) => {
+                if (!this._isDirty() || !e.cancelable) return;
+                let dest = '';
+                try { dest = e.destination?.url || ''; } catch { /* ignore */ }
+                if (dest && dest.includes('utpro-form')) return; // staying in our section
+                if (confirm('You have unsaved changes. Leave without saving?')) {
+                    this._discardDirty();
+                } else {
+                    e.preventDefault();
+                }
+            };
+            window.navigation.addEventListener('navigate', this._navGuard);
+        }
+
+        // Keep the paste buttons in sync with the system clipboard.
+        // 1) Returning focus to this window → re-read the clipboard (best-effort).
+        this._clipFocus = () => { this._refreshClip(); };
+        window.addEventListener('focus', this._clipFocus);
+        document.addEventListener('visibilitychange', this._clipFocus);
+
+        // 2) The user copied something else IN the page (Ctrl+C, copying another
+        //    field, etc.). Our own copy buttons use navigator.clipboard.writeText
+        //    which does NOT fire a 'copy' event, so any 'copy' here means external
+        //    content replaced our payload → hide the Paste buttons immediately.
+        this._onExternalCopy = () => {
+            if (this._clip) { this._clip = null; this.requestUpdate(); }
+        };
+        document.addEventListener('copy', this._onExternalCopy, true);
+
+        // 3) Live clipboard-change events (Chromium) cover copies from other apps
+        //    while the tab is focused. Re-read to refresh/clear the snapshot.
+        if (navigator.clipboard && typeof navigator.clipboard.addEventListener === 'function') {
+            this._onClipChange = () => { this._refreshClip(); };
+            try { navigator.clipboard.addEventListener('clipboardchange', this._onClipChange); } catch { /* unsupported */ }
+        }
+
+        await this._loadPermissions();
+        await this._loadForms();
+        await this._loadFieldTypes();
+        await this._restoreFromUrl();
+        this._refreshClip();
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        formBus.removeEventListener('new', this._busNew);
+        formBus.removeEventListener('select', this._busSelect);
+        formBus.removeEventListener('notify', this._busNotify);
+        formBus.removeEventListener('entries', this._busEntries);
+        formBus.removeEventListener('export', this._busExport);
+        formBus.removeEventListener('delete', this._busDelete);
+        window.removeEventListener('beforeunload', this._beforeUnload);
+        window.removeEventListener('focus', this._clipFocus);
+        document.removeEventListener('visibilitychange', this._clipFocus);
+        document.removeEventListener('copy', this._onExternalCopy, true);
+        if (this._onClipChange && navigator.clipboard?.removeEventListener) {
+            try { navigator.clipboard.removeEventListener('clipboardchange', this._onClipChange); } catch { /* ignore */ }
+        }
+        if (this._navGuard && window.navigation?.removeEventListener) {
+            window.navigation.removeEventListener('navigate', this._navGuard);
+        }
+    }
+
+    // ── Sidebar bus wiring ──
+    // Relay sidebar intents to this dashboard. Guards prevent feedback loops
+    // when the dashboard echoes its own selection back onto the bus.
+    #wireBus() {
         this._busNew = () => {
             if (this._view === 'edit' && this._editForm && this._editForm.id === 0) return;
             this._newForm();
-        };        this._busSelect = (e) => {
+        };
+        this._busSelect = (e) => {
             const id = Number(e.detail) || 0;
             if (!id) return;
             // Users who can edit open the editor; everyone else (Entries is their
@@ -105,35 +205,30 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
                 this._viewEntries(id);
             }
         };
+        this._busNotify = (e) => this._msg(e.detail);
+        this._busEntries = (e) => { const id = Number(e.detail) || 0; if (id) this._viewEntries(id); };
+        this._busExport = (e) => { const id = Number(e.detail) || 0; if (id) this._exportForm(id); };
+        this._busDelete = (e) => { const id = Number(e.detail) || 0; if (id) this._deleteForm(id); };
+
         formBus.addEventListener('new', this._busNew);
         formBus.addEventListener('select', this._busSelect);
-        this._busNotify = (e) => this._msg(e.detail);
         formBus.addEventListener('notify', this._busNotify);
-
-        await this._loadPermissions();
-        await this._loadForms();
-        await this._loadFieldTypes();
+        formBus.addEventListener('entries', this._busEntries);
+        formBus.addEventListener('export', this._busExport);
+        formBus.addEventListener('delete', this._busDelete);
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        formBus.removeEventListener('new', this._busNew);
-        formBus.removeEventListener('select', this._busSelect);
-        formBus.removeEventListener('notify', this._busNotify);
-    }
-
-    // ── API helper ──
+    // ── Shared helpers ──
     async _api(url, body = {}) {
         return apiPost(url, body, this.#authContext);
     }
 
     _msg(m, err = false) {
-        if (err) { this._error = m; this._success = ''; }
-        else { this._success = m; this._error = ''; }
-        setTimeout(() => { this._error = ''; this._success = ''; }, 3000);
+        // Use Umbraco's built-in floating notifications (toast) for all messages.
+        this.#notificationContext?.peek(err ? 'danger' : 'positive', { data: { message: m } });
     }
 
-    // ── Permissions ──
+    // ── Data loading ──
     async _loadPermissions() {
         try {
             this._permissions = await this._api(API + '/permissions');
@@ -142,321 +237,21 @@ export class UtproSimpleFormDashboard extends UmbLitElement {
         }
     }
 
-    // ── Data loading ──
     async _loadForms() {
         this._loading = true;
         try { this._forms = await this._api(API + '/list'); }
         catch (e) { this._msg(e.message, true); }
         this._loading = false;
-        // Keep the sidebar list in sync.
-        formBus.refresh();
+        formBus.refresh(); // keep the sidebar list in sync
     }
 
     async _loadFieldTypes() {
         try { this._fieldTypes = await this._api(API + '/field-types'); } catch {}
     }
 
-    // ── Form CRUD ──
-    _newForm() {
-        this._editForm = {
-            id: 0, name: '', alias: '', fields: [], groups: [],
-            successMessage: 'Thank you!', redirectUrl: '', emailTo: '', emailSubject: '',
-            storeEntries: true, isEnabled: true
-        };
-        this._view = 'edit';
-        // Sync sidebar (clear active highlight for a brand-new form).
-        formBus.requestNew();
-    }
-
-    async _editExisting(id) {
-        try {
-            this._editForm = await this._api(API + '/get', { id });
-            this._showColumnSettings = false;
-            const res = await this._api(API + '/entries', { formId: id, skip: 0, take: 1 });
-            this._entryCount = res.total || 0;
-            this._view = 'edit';
-            // Sync sidebar highlight regardless of where the open was triggered.
-            formBus.setActive(id);
-        } catch (e) { this._msg(e.message, true); }
-    }
-
-    // Return to the form list and clear the sidebar highlight (id 0 = none).
-    _backToList() {
-        this._view = 'list';
-        this._showColumnSettings = false;
-        this._selectedEntries = [];
-        formBus.setActive(0);
-    }
-
-    async _saveForm() {
-        if (!this._editForm.name || !this._editForm.alias) {
-            this._msg('Name and Alias required', true);
-            return;
-        }
-        try {
-            const res = await this._api(API + '/save', this._editForm);
-            this._msg(res.message);
-            this._editForm.id = res.id;
-            await this._loadForms();
-        } catch (e) { this._msg(e.message, true); }
-    }
-
-    async _deleteForm(id) {
-        if (!confirm('Delete this form and all entries?')) return;
-        try {
-            await this._api(API + '/delete', { id });
-            this._msg('Deleted');
-            await this._loadForms();
-            if (this._editForm?.id === id) { this._editForm = null; this._view = 'list'; formBus.selectForm(0); }
-        } catch (e) { this._msg(e.message, true); }
-    }
-
-    // ── Group management ──
-    _addGroup() {
-        const f = this._editForm;
-        if (!f.groups) f.groups = [];
-        const idx = f.groups.length;
-        f.groups = [...f.groups, {
-            id: crypto.randomUUID?.() || Date.now().toString(36),
-            name: '',
-            cssClass: '',
-            columns: [{ id: crypto.randomUUID?.() || Date.now().toString(36), width: 12, fields: [] }],
-            sortOrder: idx
-        }];
-        this.requestUpdate();
-    }
-
-    _removeGroup(gIdx) {
-        if (!confirm('Remove this group and all its columns/fields?')) return;
-        this._editForm.groups = this._editForm.groups.filter((_, i) => i !== gIdx);
-        this._editForm.groups.forEach((g, i) => g.sortOrder = i);
-        this.requestUpdate();
-    }
-
-    _moveGroup(gIdx, dir) {
-        const arr = [...this._editForm.groups];
-        const newIdx = gIdx + dir;
-        if (newIdx < 0 || newIdx >= arr.length) return;
-        [arr[gIdx], arr[newIdx]] = [arr[newIdx], arr[gIdx]];
-        arr.forEach((g, i) => g.sortOrder = i);
-        this._editForm.groups = arr;
-        this.requestUpdate();
-    }
-
-    _updateGroup(gIdx, key, val) {
-        this._editForm.groups[gIdx][key] = val;
-        this.requestUpdate();
-    }
-
-    // ── Column management within a group ──
-    _addColumn(gIdx) {
-        const g = this._editForm.groups[gIdx];
-        if (!g.columns) g.columns = [];
-        g.columns = [...g.columns, {
-            id: crypto.randomUUID?.() || Date.now().toString(36),
-            width: 6,
-            fields: []
-        }];
-        this.requestUpdate();
-    }
-
-    _removeColumn(gIdx, cIdx) {
-        if (!confirm('Remove this column and all its fields?')) return;
-        this._editForm.groups[gIdx].columns = this._editForm.groups[gIdx].columns.filter((_, i) => i !== cIdx);
-        this.requestUpdate();
-    }
-
-    _updateColumnWidth(gIdx, cIdx, val) {
-        this._editForm.groups[gIdx].columns[cIdx].width = Math.min(12, Math.max(1, parseInt(val) || 1));
-        this.requestUpdate();
-    }
-
-    /**
-     * Move an entire column (with all its fields) to another group.
-     * @param {number} fromGIdx - source group index
-     * @param {number} cIdx - column index within source group
-     * @param {number} toGIdx - destination group index
-     */
-    _moveColumnTo(fromGIdx, cIdx, toGIdx) {
-        const f = this._editForm;
-        const col = f.groups[fromGIdx].columns.splice(cIdx, 1)[0];
-        if (!col) return;
-        f.groups[toGIdx].columns.push(col);
-        this.requestUpdate();
-    }
-
-    _swapColumn(gIdx, cIdx, dir) {
-        const cols = this._editForm.groups[gIdx].columns;
-        const newIdx = cIdx + dir;
-        if (newIdx < 0 || newIdx >= cols.length) return;
-        [cols[cIdx], cols[newIdx]] = [cols[newIdx], cols[cIdx]];
-        this.requestUpdate();
-    }
-
-    // ── Field management within a column ──
-    _addFieldToColumn(gIdx, cIdx) {
-        const col = this._editForm.groups[gIdx].columns[cIdx];
-        const idx = col.fields.length;
-        col.fields = [...col.fields, {
-            id: crypto.randomUUID?.() || Date.now().toString(36),
-            type: 'text', label: '', name: 'field_' + Date.now().toString(36),
-            placeholder: '', cssClass: '', required: false,
-            validation: '', validationMessage: '', defaultValue: '',
-            options: [], sortOrder: idx, attributes: {}
-        }];
-        this.requestUpdate();
-    }
-
-    _removeFieldFromColumn(gIdx, cIdx, fIdx) {
-        const removedName = this._editForm.groups[gIdx].columns[cIdx].fields[fIdx]?.name;
-        this._editForm.groups[gIdx].columns[cIdx].fields = this._editForm.groups[gIdx].columns[cIdx].fields.filter((_, i) => i !== fIdx);
-        if (removedName && this._editForm.visibleColumns) {
-            this._editForm.visibleColumns = this._editForm.visibleColumns.filter(c => c !== removedName);
-        }
-        this.requestUpdate();
-    }
-
-    _moveFieldInColumn(gIdx, cIdx, fIdx, dir) {
-        const arr = [...this._editForm.groups[gIdx].columns[cIdx].fields];
-        const newIdx = fIdx + dir;
-        if (newIdx < 0 || newIdx >= arr.length) return;
-        [arr[fIdx], arr[newIdx]] = [arr[newIdx], arr[fIdx]];
-        arr.forEach((f, i) => f.sortOrder = i);
-        this._editForm.groups[gIdx].columns[cIdx].fields = arr;
-        this.requestUpdate();
-    }
-
-    _updateFieldInColumn(gIdx, cIdx, fIdx, key, val) {
-        this._editForm.groups[gIdx].columns[cIdx].fields[fIdx][key] = val;
-        if (key === 'type' && val === 'password') {
-            this._editForm.groups[gIdx].columns[cIdx].fields[fIdx].isSensitive = true;
-        }
-        this.requestUpdate();
-    }
-
-    _addOptionInColumn(gIdx, cIdx, fIdx) {
-        if (!this._editForm.groups[gIdx].columns[cIdx].fields[fIdx].options)
-            this._editForm.groups[gIdx].columns[cIdx].fields[fIdx].options = [];
-        this._editForm.groups[gIdx].columns[cIdx].fields[fIdx].options.push({ text: '', value: '' });
-        this.requestUpdate();
-    }
-
-    _removeOptionInColumn(gIdx, cIdx, fIdx, oIdx) {
-        this._editForm.groups[gIdx].columns[cIdx].fields[fIdx].options.splice(oIdx, 1);
-        this.requestUpdate();
-    }
-
-    // ── Move field between groups/columns ──
-    /**
-     * Move a field from one location to another.
-     * @param {object} from - { gIdx, cIdx, fIdx } source (-1 for ungrouped)
-     * @param {object} to   - { gIdx, cIdx } destination (-1 for ungrouped)
-     */
-    _moveFieldTo(from, to) {
-        const f = this._editForm;
-
-        // Remove from source column
-        const field = f.groups[from.gIdx].columns[from.cIdx].fields.splice(from.fIdx, 1)[0];
-        if (!field) return;
-
-        // Add to destination column
-        const destCol = f.groups[to.gIdx].columns[to.cIdx];
-        field.sortOrder = destCol.fields.length;
-        destCol.fields.push(field);
-
-        this.requestUpdate();
-    }
-
-    // ── Entries ──
-    async _viewEntries(formId) {
-        this._viewFormId = formId;
-        this._entrySkip = 0;
-        this._search = '';
-        this._dateFrom = '';
-        this._dateTo = '';
-        this._selectedEntries = [];
-        this._view = 'entries';
-        // Highlight the corresponding form in the sidebar.
-        formBus.setActive(formId);
-        await this._loadEntries();
-    }
-
-    async _loadEntries() {
-        try {
-            const body = {
-                formId: this._viewFormId, skip: this._entrySkip, take: 20
-            };
-            if (this._search) body.search = this._search;
-            if (this._dateFrom) body.dateFrom = this._dateFrom;
-            if (this._dateTo) body.dateTo = this._dateTo;
-            const res = await this._api(API + '/entries', body);
-            this._entries = res.items || [];
-            this._entryTotal = res.total || 0;
-        } catch (e) { this._msg(e.message, true); }
-    }
-
-    async _deleteEntry(id) {
-        if (!confirm('Delete this entry?')) return;
-        try {
-            await this._api(API + '/delete-entry', { id });
-            this._msg('Deleted');
-            this._selectedEntries = this._selectedEntries.filter(x => x !== id);
-            await this._loadEntries();
-        } catch (e) { this._msg(e.message, true); }
-    }
-
-    _toggleEntrySelect(id) {
-        if (this._selectedEntries.includes(id))
-            this._selectedEntries = this._selectedEntries.filter(x => x !== id);
-        else
-            this._selectedEntries = [...this._selectedEntries, id];
-    }
-
-    _toggleSelectAll() {
-        if (this._selectedEntries.length === this._entries.length)
-            this._selectedEntries = [];
-        else
-            this._selectedEntries = this._entries.map(s => s.id);
-    }
-
-    async _bulkDelete() {
-        if (!this._selectedEntries.length) return;
-        if (!confirm('Delete ' + this._selectedEntries.length + ' entries?')) return;
-        for (const id of this._selectedEntries) {
-            try { await this._api(API + '/delete-entry', { id }); } catch {}
-        }
-        this._selectedEntries = [];
-        this._msg('Deleted');
-        await this._loadEntries();
-    }
-
-    _exportCsv() {
-        if (!this._entries.length) return;
-        const allKeys = [...new Set(this._entries.flatMap(s => Object.keys(s.data || {})))];
-        const headers = ['Date', 'IP', ...allKeys];
-        const rows = this._entries.map(s => {
-            const date = new Date(s.createdUtc).toLocaleString();
-            const ip = s.ipAddress || '';
-            const fields = allKeys.map(k => '"' + (s.data?.[k] || '').replace(/"/g, '""') + '"');
-            return ['"' + date + '"', '"' + ip + '"', ...fields].join(',');
-        });
-        const csv = headers.join(',') + '\n' + rows.join('\n');
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const formName = this._forms.find(f => f.id === this._viewFormId)?.alias || 'form';
-        a.href = url; a.download = formName + '-entries.csv'; a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    _viewDetail(entry) { this._detailEntry = entry; }
-    _closeDetail() { this._detailEntry = null; }
-
     // ── Render ──
     render() {
         return html`
-            ${this._error ? html`<div class="msg error">${this._error}</div>` : nothing}
-            ${this._success ? html`<div class="msg success">${this._success}</div>` : nothing}
             ${this._view === 'list' ? renderList(this)
                 : this._view === 'edit' ? renderEditor(this)
                 : renderEntries(this)}

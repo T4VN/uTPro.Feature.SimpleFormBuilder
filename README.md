@@ -10,10 +10,15 @@ Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
 
 - Dedicated **uTPro Form** section in the top menu bar, with a left **Forms** tree (like Dictionary)
 - Visual builder: groups → 12-column layout → fields, drag-free ordering, live settings
+- **Copy / paste** groups, columns and fields via the system clipboard (works across forms)
+- **Import / Export** form definitions as JSON (layout only — no entries)
 - **19 built-in field types** and a 2-step custom field type extension point
 - Client-side validation with multi-language (Umbraco Dictionary) messages
 - **Sensitive fields encrypted at rest** (ASP.NET Data Protection), masked in the UI by default
-- Entry storage with search, date filters, paging, CSV export
+- Entry storage with search, quick **date-range filters** (Today / 7d / 30d / This month / custom), paging, CSV export
+- **Shareable deep-links**: the URL reflects the current view, selected form and entry filters (survives refresh)
+- **Form Picker** property editor + ready-made data type to choose a form from a Content property
+- Native Umbraco **toast notifications** for all feedback
 - Public REST APIs for submit / render / entries (opt-in per form)
 - Role-aware UI driven by Umbraco user groups
 
@@ -57,8 +62,10 @@ The section uses a familiar two-pane layout:
 - **Left panel (Forms tree)** — lists all forms. A **+** button creates a new form, and a **⋯ (Options)** menu offers:
   - **Reload** — refresh the list
   - **Create** — new form
-  - **Import** — reserved for a future release
-- **Main area** — a **Create** button, a **filter** box, and the forms table (Name, Alias, Fields, Status, Actions). Selecting a form opens it; users without edit rights jump straight to its **Entries**.
+  - **Import** — create a form from an exported JSON file
+
+  Each form row also has a **⋯** menu (Edit / Entries / Export / Delete).
+- **Main area** — a **Create** button, an **Import** button, a **filter** box, and the forms table (Name, Alias, Fields, Status, Actions). Selecting a form opens it; users without edit rights jump straight to its **Entries**.
 
 ---
 
@@ -95,7 +102,51 @@ To customize the layout for a specific form, create a file matching its alias. N
 
 ---
 
-## Creating Forms in the Backoffice
+## Picking a Form from Content (Form Picker)
+
+Instead of hard-coding the alias in a template, editors can choose a form from a Content property.
+
+The package ships a ready-to-use **uTPro Form Picker** data type (created automatically on startup), so you can skip straight to step 2:
+
+1. *(Optional)* Create your own: **Settings → Data Types → Create** → Property Editor **uTPro Form Picker**.
+2. Add a property using the **uTPro Form Picker** data type to any Document Type (e.g. a `form` property on *Home*).
+3. When editing content, pick a form from the dropdown — it stores the form's **alias**.
+4. In the template, read the alias and feed it into the same View Component used for hard-coded rendering:
+
+```razor
+@{
+    var formAlias = Model.Value<string>("form");
+}
+@if (!string.IsNullOrWhiteSpace(formAlias))
+{
+    @await Component.InvokeAsync("uTProSimpleForm", new { alias = formAlias })
+}
+```
+
+The dropdown only lists forms whose **Show in content picker** toggle (form *Settings*) is on, so you can keep internal/system forms out of the editor's choices while they keep working everywhere else.
+
+---
+
+## Import / Export
+
+Forms can be moved between environments as JSON (definition only — **no entries, no IDs, no timestamps**).
+
+- **Export** — from the editor toolbar, a form row, or the sidebar **⋯** menu. Downloads `{alias}.form.json`. If the open form has unsaved changes you're asked to save first.
+- **Import** — from the list toolbar or sidebar **Options** menu. Always creates a **new** form; if the alias already exists it is auto-suffixed (`-copy`, `-copy-2`, …).
+
+Requires edit permission (`canEdit`).
+
+---
+
+## Copy / Paste (Groups, Columns, Fields)
+
+The builder can copy a whole **group**, **column** or **field** and paste it elsewhere — even into a different form.
+
+- Copy buttons sit on each group/column/field; **Paste** buttons appear only when the clipboard holds a matching item.
+- Backed by the **system clipboard** (not local storage), so copying something else makes the Paste buttons disappear.
+- On paste, all internal IDs are regenerated and colliding field `name`s are de-duped (`_copy`, `_copy2`, …) so submissions never clash.
+
+> Reading the clipboard requires a one-time browser permission prompt (granted on the first paste). Best used in Chromium-based browsers.
 
 1. Open the **uTPro Form** section
 2. Click **Create** (main area) or **+** (left panel)
@@ -370,7 +421,8 @@ uTPro.Feature.SimpleFormBuilder/
 │   ├── uTProSimpleFormAssets.cs             # Resolves front-end CSS/JS paths
 │   └── uTProSimpleFormHtmlHelper.cs         # FieldHelper used in partials
 ├── Migrations/
-│   └── uTProSimpleFormMigration.cs          # AsyncMigrationBase: creates tables + seeds sample data
+│   ├── uTProSimpleFormMigration.cs          # AsyncMigrationBase: creates tables + seeds sample data
+│   └── FormPickerDataType.cs                # Ensures the "uTPro Form Picker" data type exists
 ├── Models/
 │   └── FormModels.cs                        # DTOs, ViewModels, request models
 ├── Services/
@@ -382,12 +434,14 @@ uTPro.Feature.SimpleFormBuilder/
 │   └── Fields/                               # One file per field type (+ _Default.cshtml fallback)
 └── wwwroot/
     ├── App_Plugins/simple-form/              # Backoffice UI
-    │   ├── umbraco-package.json              # Section + sidebar + dashboard + localization manifest
-    │   ├── index.js                          # Main dashboard (list / editor / entries)
+    │   ├── umbraco-package.json              # Section + sidebar + dashboard + property editor + localization
+    │   ├── index.js                          # Dashboard shell: state, lifecycle, guards, render
     │   ├── sidebar.js                        # Left Forms tree (+ / ⋯ menu)
     │   ├── bus.js                            # Event bus shared by sidebar ↔ dashboard
-    │   ├── api.js, styles.js                 # API helper + styles
+    │   ├── api.js, styles.js, date-range.js  # API helper + styles + pure date helpers
+    │   ├── mixins/                           # url-state / form-actions / builder / clipboard / entries
     │   ├── views/                            # list / editor / entries / detail views
+    │   ├── property-editor/                  # form-picker.element.js (content data type UI)
     │   └── lang/en-us.js                     # Localization
     └── uTPro/simple-form/
         ├── css/simple-form.css               # Front-end styles
@@ -409,7 +463,7 @@ The package serves its `wwwroot` at the site root (`StaticWebAssetBasePath = /`)
 
 Created automatically on first startup.
 
-**`utpro_uTProSimpleForm`** — form definitions
+**`uTProSimpleForm`** — form definitions
 
 | Column | Type | Purpose |
 |---|---|---|
@@ -427,14 +481,15 @@ Created automatically on first startup.
 | VisibleColumnsJson | ntext | Backoffice entry table config |
 | EnableRenderApi | bit | Allow the public render API |
 | EnableEntriesApi | bit | Allow the public entries API |
+| ShowInPicker | bit | Whether the form appears in the Form Picker data type (default true) |
 | CreatedUtc / UpdatedUtc | datetime | Timestamps |
 
-**`utpro_uTProSimpleFormEntry`** — submissions
+**`uTProSimpleFormEntry`** — submissions
 
 | Column | Type | Purpose |
 |---|---|---|
 | Id | int (PK) | Auto-increment |
-| FormId | int | Links to `utpro_uTProSimpleForm` |
+| FormId | int | Links to `uTProSimpleForm` |
 | DataJson | ntext | Submitted data (sensitive fields encrypted) |
 | IpAddress | nvarchar(100) | Submitter's IP |
 | UserAgent | nvarchar(500) | Submitter's browser |
@@ -453,4 +508,11 @@ Created automatically on first startup.
 
 ## Migration Note
 
-The migration runs automatically on startup via Umbraco's migration system. It is implemented with `AsyncMigrationBase` (compatible with Umbraco 16–18). To re-run it on a fresh database, delete the `uTPro.uTProSimpleForm` key from the `umbracoKeyValue` table.
+Migrations run automatically on startup via Umbraco's migration system (`AsyncMigrationBase`, compatible with Umbraco 16–18). The plan has two steps:
+
+1. `utprosimpleform-init` — creates the tables and seeds the sample **Contact Us** form.
+2. `utprosimpleform-showinpicker` — adds the `ShowInPicker` column to existing installs (defaults to `true`, so pre-existing forms stay visible in the picker).
+
+On startup the package also ensures a **uTPro Form Picker** data type exists (created once if missing).
+
+To re-run migrations on a fresh database, delete the `uTPro.uTProSimpleForm` key from the `umbracoKeyValue` table.

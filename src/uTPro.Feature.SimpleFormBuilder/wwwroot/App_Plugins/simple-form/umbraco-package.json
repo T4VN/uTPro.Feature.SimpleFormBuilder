@@ -50,6 +50,19 @@
       "name": "Simple Form English",
       "js": "/App_Plugins/simple-form/lang/en-us.js",
       "meta": { "culture": "en-US" }
+    },
+    {
+      "type": "propertyEditorUi",
+      "alias": "uTPro.SimpleForm.FormPicker",
+      "name": "uTPro Form Picker",
+      "element": "/App_Plugins/simple-form/property-editor/form-picker.element.js",
+      "elementName": "utpro-form-picker",
+      "meta": {
+        "label": "uTPro Form Picker",
+        "icon": "icon-list",
+        "group": "pickers",
+        "propertyEditorSchemaAlias": "Umbraco.Plain.String"
+      }
     }
   ]
 }

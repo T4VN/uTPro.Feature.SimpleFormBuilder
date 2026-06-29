@@ -55,6 +55,28 @@ public class uTProSimpleFormApiController(
         return success ? Ok(new { message }) : BadRequest(new { message });
     }
 
+    // ── Import / Export (edit permission required) ──
+
+    [HttpPost("export")]
+    public IActionResult Export([FromBody] GetFormRequest request)
+    {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to export forms" });
+
+        var model = formService.ExportForm(request.Id);
+        return model != null ? Ok(model) : NotFound(new { message = "Form not found" });
+    }
+
+    [HttpPost("import")]
+    public IActionResult Import([FromBody] FormExportModel model)
+    {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to import forms" });
+
+        var (success, message, id) = formService.ImportForm(model);
+        return success ? Ok(new { message, id }) : BadRequest(new { message });
+    }
+
     // ── Entries (view: all users, delete: admin only) ──
 
     [HttpPost("entries")]

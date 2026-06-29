@@ -9,15 +9,16 @@ export function renderEditor(host) {
 
     return html`
         <div class="toolbar">
-            <uui-button look="outline" @click=${() => host._backToList()}>&#8592; Back</uui-button>
+            <uui-button look="outline" @click=${() => host._backToList()}><uui-icon name="icon-arrow-left"></uui-icon> Back</uui-button>
+            <uui-button look="primary" @click=${() => host._saveForm()}><uui-icon name="icon-save"></uui-icon> Save</uui-button>
+            ${f.id ? html`<uui-button look="outline" @click=${() => host._exportForm(f.id)}><uui-icon name="icon-download-alt"></uui-icon> Export</uui-button>` : nothing}
             <h2>${f.id ? html`Edit: ${f.name}` : 'New Form'}</h2>
             <div class="toolbar-right">
                 ${f.id ? html`
                     <uui-button look="outline" compact @click=${() => host._viewEntries(f.id)}>Entries (${host._entryCount ?? 0})</uui-button>
                     <uui-button look="${showSettings ? 'primary' : 'outline'}" compact
-                        @click=${() => { host._showColumnSettings = !host._showColumnSettings; host.requestUpdate(); }}>&#9881; Settings</uui-button>
+                        @click=${() => host._toggleColumnSettings()}><uui-icon name="icon-settings"></uui-icon> Settings</uui-button>
                 ` : nothing}
-                <uui-button look="primary" @click=${() => host._saveForm()}>Save Form</uui-button>
             </div>
         </div>
         ${showSettings && f.id ? html`
@@ -28,7 +29,10 @@ export function renderEditor(host) {
         ${!f.id ? _renderGeneralSettings(host, f) : nothing}
         <div class="section-header">
             <h3>Groups</h3>
-            <uui-button look="primary" compact @click=${() => host._addGroup()}>+ Add Group</uui-button>
+            <div class="header-actions">
+                ${host._clipPeek('group') ? html`<uui-button look="outline" color="warning" compact @click=${() => host._pasteGroup()}><uui-icon name="icon-paste-in"></uui-icon> Paste Group</uui-button>` : nothing}
+                <uui-button look="primary" compact @click=${() => host._addGroup()}>+ Add Group</uui-button>
+            </div>
         </div>
         ${f.groups.length === 0 ? html`<div class="empty">No groups yet. Add a group to organise fields.</div>` : nothing}
         ${f.groups.map((group, gIdx) => _renderGroupCard(host, group, gIdx))}
@@ -42,7 +46,7 @@ function _renderGroupCard(host, group, gIdx) {
     if (!group.columns) group.columns = [];
     const totalWidth = group.columns.reduce((sum, c) => sum + (c.width || 1), 0);
     return html`
-        <div class="group-card">
+        <uui-box class="group-card">
             <div class="group-header">
                 <div>
                     <span class="group-num">Group #${gIdx + 1}</span>
@@ -53,18 +57,20 @@ function _renderGroupCard(host, group, gIdx) {
                     </span>
                 </div>
                 <div class="group-settings">
-                    <label class="group-setting-label">Name
+                    <label class="group-setting-label">Heading
                         <uui-input .value=${group.name || ''} placeholder="(optional)" @input=${(e) => host._updateGroup(gIdx, 'name', e.target.value)}></uui-input>
                     </label>
                     <label class="group-setting-label">CSS Class
                         <uui-input .value=${group.cssClass || ''} placeholder="(optional)" @input=${(e) => host._updateGroup(gIdx, 'cssClass', e.target.value)}></uui-input>
                     </label>
-                    <uui-button look="outline" compact style="margin-top:8px;" @click=${() => host._addColumn(gIdx)}>+ Add Column</uui-button>
+                    <uui-button look="outline" compact @click=${() => host._addColumn(gIdx)}>+ Add Column</uui-button>
+                    ${host._clipPeek('column') ? html`<uui-button look="outline" color="warning" compact @click=${() => host._pasteColumn(gIdx)}><uui-icon name="icon-paste-in"></uui-icon> Paste Column</uui-button>` : nothing}
                 </div>
                 <div class="group-actions">
-                    <uui-button look="outline" compact @click=${() => host._moveGroup(gIdx, -1)} ?disabled=${gIdx === 0}>&#9650;</uui-button>
-                    <uui-button look="outline" compact @click=${() => host._moveGroup(gIdx, 1)} ?disabled=${gIdx === f.groups.length - 1}>&#9660;</uui-button>
-                    <uui-button look="outline" color="danger" compact @click=${() => host._removeGroup(gIdx)}>&#128465;</uui-button>
+                    <uui-button look="outline" compact title="Copy group" @click=${() => host._copyGroup(gIdx)}><uui-icon name="icon-documents"></uui-icon></uui-button>
+                    <uui-button look="outline" compact @click=${() => host._moveGroup(gIdx, -1)} ?disabled=${gIdx === 0}><uui-icon name="icon-navigation-up"></uui-icon></uui-button>
+                    <uui-button look="outline" compact @click=${() => host._moveGroup(gIdx, 1)} ?disabled=${gIdx === f.groups.length - 1}><uui-icon name="icon-navigation-down"></uui-icon></uui-button>
+                    <uui-button look="outline" color="danger" compact @click=${() => host._removeGroup(gIdx)}><uui-icon name="icon-trash"></uui-icon></uui-button>
                 </div>
             </div>
             <div class="group-preview">
@@ -73,7 +79,7 @@ function _renderGroupCard(host, group, gIdx) {
             <div class="group-columns-container">
                 ${group.columns.map((col, cIdx) => _renderColumnCard(host, col, gIdx, cIdx, group.columns.length))}
             </div>
-        </div>`;
+        </uui-box>`;
 }
 
 // ── Column card (draggable) ──
@@ -96,10 +102,11 @@ function _renderColumnCard(host, col, gIdx, cIdx, totalCols) {
             } catch { }
         }}>
             <div class="col-header">
-                <span class="col-drag-handle" title="Drag to reorder">&#9776;</span>
+                <span class="col-drag-handle" title="Drag to reorder"><uui-icon name="icon-navigation"></uui-icon></span>
                 <span class="col-num">Col ${cIdx + 1}</span>
                 <div class="col-actions">
-                    ${totalCols > 1 ? html`<uui-button look="outline" color="danger" compact @click=${() => host._removeColumn(gIdx, cIdx)}>&#10005;</uui-button>` : nothing}
+                    <uui-button look="outline" compact title="Copy column" @click=${() => host._copyColumn(gIdx, cIdx)}><uui-icon name="icon-documents"></uui-icon></uui-button>
+                    ${totalCols > 1 ? html`<uui-button look="outline" color="danger" compact @click=${() => host._removeColumn(gIdx, cIdx)}><uui-icon name="icon-remove"></uui-icon></uui-button>` : nothing}
                 </div>
             </div>
             <div class="col-fields">
@@ -114,6 +121,7 @@ function _renderColumnCard(host, col, gIdx, cIdx, totalCols) {
                 ${col.fields.map((field, fIdx) => _renderFieldCompact(host, field, fIdx, { gIdx, cIdx }))}
                 <div class="col-add-field">
                     <uui-button look="outline" compact @click=${() => host._addFieldToColumn(gIdx, cIdx)}>+ Add Field</uui-button>
+                    ${host._clipPeek('field') ? html`<uui-button look="outline" color="warning" compact @click=${() => host._pasteField(gIdx, cIdx)}><uui-icon name="icon-paste-in"></uui-icon> Paste Field</uui-button>` : nothing}
                 </div>
             </div>
         </div>`;
@@ -153,10 +161,10 @@ function _renderFieldCompact(host, field, fIdx, loc) {
             <span class="fc-label">${label} ${field.required ? html`<span class="fc-req" title="Required">*</span>` : nothing}</span>
             
             <div class="fc-actions">
-                <button class="fc-btn" title="Settings" @click=${() => { host._fieldSettingsLoc = { ...loc, fIdx }; host.requestUpdate(); }}>&#9881;</button>
-                <button class="fc-btn" title="Move up" ?disabled=${fIdx === 0} @click=${() => host._moveFieldInColumn(loc.gIdx, loc.cIdx, fIdx, -1)}>&#9650;</button>
-                <button class="fc-btn" title="Move down" ?disabled=${fIdx === totalFields - 1} @click=${() => host._moveFieldInColumn(loc.gIdx, loc.cIdx, fIdx, 1)}>&#9660;</button>
-                <button class="fc-btn fc-btn-danger" title="Remove" @click=${() => host._removeFieldFromColumn(loc.gIdx, loc.cIdx, fIdx)}>&#128465;</button>
+                <button class="fc-btn" title="Copy field" @click=${() => host._copyField(loc.gIdx, loc.cIdx, fIdx)}><uui-icon name="icon-documents"></uui-icon></button>
+                <button class="fc-btn" title="Move up" ?disabled=${fIdx === 0} @click=${() => host._moveFieldInColumn(loc.gIdx, loc.cIdx, fIdx, -1)}><uui-icon name="icon-navigation-up"></uui-icon></button>
+                <button class="fc-btn" title="Move down" ?disabled=${fIdx === totalFields - 1} @click=${() => host._moveFieldInColumn(loc.gIdx, loc.cIdx, fIdx, 1)}><uui-icon name="icon-navigation-down"></uui-icon></button>
+                <button class="fc-btn" title="Settings" @click=${() => { host._fieldSettingsLoc = { ...loc, fIdx }; host.requestUpdate(); }}><uui-icon name="icon-settings"></uui-icon></button>
             </div>
         </div>`;
 }
@@ -178,7 +186,6 @@ function _renderFieldSettingsDialog(host) {
             <div class="field-dialog">
                 <div class="field-dialog-header">
                     <h3>Field Settings — ${field.label || field.name || '(untitled)'}</h3>
-                    <uui-button look="secondary" compact @click=${close}>&#10005;</uui-button>
                 </div>
                 <div class="field-dialog-body">
                     <div class="fd-grid">
@@ -229,20 +236,26 @@ function _renderFieldSettingsDialog(host) {
                                 <div class="option-row">
                                     <uui-input placeholder="Text" .value=${opt.text} @input=${(e) => { opt.text = e.target.value; host.requestUpdate(); }}></uui-input>
                                     <uui-input placeholder="Value" .value=${opt.value} @input=${(e) => { opt.value = e.target.value; host.requestUpdate(); }}></uui-input>
-                                    <uui-button look="outline" color="danger" compact @click=${() => host._removeOptionInColumn(loc.gIdx, loc.cIdx, loc.fIdx, oIdx)}>&#10005;</uui-button>
+                                    <uui-button look="outline" color="danger" compact @click=${() => host._removeOptionInColumn(loc.gIdx, loc.cIdx, loc.fIdx, oIdx)}><uui-icon name="icon-remove"></uui-icon></uui-button>
                                 </div>`)}
                         </div>
                     ` : nothing}
 
-                </div>
-                <div class="field-dialog-footer">
-                    <!-- Toggles -->
+                    <!-- Field flags -->
                     <div class="fd-toggles">
                         <uui-toggle ?checked=${!field.isHidden} @change=${(e) => updateFn('isHidden', !e.target.checked)} label="Visible"></uui-toggle>
                         <uui-toggle ?checked=${field.required} @change=${(e) => updateFn('required', e.target.checked)} label="Required"></uui-toggle>
                         <uui-toggle ?checked=${field.isSensitive || field.type === 'password'} @change=${(e) => updateFn('isSensitive', e.target.checked)} label="Sensitive Data"></uui-toggle>
-                        <uui-button look="primary" @click=${close}>Done</uui-button>
                     </div>
+
+                </div>
+                <div class="field-dialog-footer">
+                    <uui-button look="outline" color="danger" @click=${() => { if (confirm('Remove this field?')) { host._removeFieldFromColumn(loc.gIdx, loc.cIdx, loc.fIdx); close(); } }}>
+                        <uui-icon name="icon-trash"></uui-icon> Delete
+                    </uui-button>
+                    <uui-button class="dlg-close" look="secondary" @click=${close}>
+                        <uui-icon name="icon-delete"></uui-icon> Close
+                    </uui-button>
                 </div>
             </div>
         </div>`;
@@ -278,8 +291,7 @@ function _renderMoveToInDialog(host, loc) {
 
 function _renderEmbedSettings(host, f) {
     return html`
-        <div class="settings-panel">
-            <div class="settings-header"><h3>Embed API Settings</h3></div>
+        <uui-box headline="Embed API Settings">
             <div class="embed-render-row"><code>POST /api/utpro/simple-form/submit { "alias": "${f.alias}", "data": { ... } }</code></div>
             <div class="embed-render-row">
                 <uui-toggle ?checked=${f.enableRenderApi} @change=${(e) => { f.enableRenderApi = e.target.checked; host.requestUpdate(); }} label=${f.enableRenderApi ? 'Enabled' : 'Disabled'}></uui-toggle>
@@ -289,19 +301,16 @@ function _renderEmbedSettings(host, f) {
                 <uui-toggle ?checked=${f.enableEntriesApi} @change=${(e) => { f.enableEntriesApi = e.target.checked; host.requestUpdate(); }} label=${f.enableEntriesApi ? 'Enabled' : 'Disabled'}></uui-toggle>
                 <code>GET /api/utpro/simple-form/entries/${f.alias}</code>
             </div>
-        </div>`;
+        </uui-box>`;
 }
 
 function _renderGeneralSettings(host, f) {
     return html`
-        <div class="settings-panel">
-            <div class="settings-header">
-                <h3>General Settings
-                    <label class="check-label">
-                        <uui-toggle ?checked=${f.storeEntries} @change=${(e) => { f.storeEntries = e.target.checked; }} label="Store Entries"></uui-toggle>
-                        <uui-toggle ?checked=${f.isEnabled} @change=${(e) => { f.isEnabled = e.target.checked; }} label="Enabled"></uui-toggle>
-                    </label>
-                </h3>
+        <uui-box headline="General Settings">
+            <div class="gs-toggles">
+                <uui-toggle ?checked=${f.storeEntries} @change=${(e) => { f.storeEntries = e.target.checked; }} label="Store Entries"></uui-toggle>
+                <uui-toggle ?checked=${f.isEnabled} @change=${(e) => { f.isEnabled = e.target.checked; }} label="Enabled"></uui-toggle>
+                <uui-toggle ?checked=${f.showInPicker !== false} @change=${(e) => { f.showInPicker = e.target.checked; }} label="Show in content picker"></uui-toggle>
             </div>
             <div class="form-grid">
                 <label>Name <uui-input .value=${f.name} @input=${(e) => { f.name = e.target.value; }}></uui-input></label>
@@ -311,7 +320,7 @@ function _renderGeneralSettings(host, f) {
                 <label>Email To <uui-input .value=${f.emailTo || ''} @input=${(e) => { f.emailTo = e.target.value; }}></uui-input></label>
                 <label>Email Subject <uui-input .value=${f.emailSubject || ''} @input=${(e) => { f.emailSubject = e.target.value; }}></uui-input></label>
             </div>
-        </div>`;
+        </uui-box>`;
 }
 
 function _renderColumnSettings(host, f) {
@@ -323,8 +332,8 @@ function _renderColumnSettings(host, f) {
         orderedNames = [...checked, ...unchecked];
     } else { orderedNames = [...allFieldNames]; }
     return html`
-        <div class="settings-panel">
-            <div class="settings-header"><h3>&#9881; Entries Column Settings</h3><span class="settings-hint">Drag to reorder.</span></div>
+        <uui-box headline="Entries Column Settings">
+            <span class="settings-hint">Drag to reorder.</span>
             <div class="settings-body">
                 ${allFieldNames.length === 0 ? html`<div class="empty">No fields yet.</div>` : nothing}
                 ${orderedNames.map((name, idx) => {
@@ -341,8 +350,8 @@ function _renderColumnSettings(host, f) {
                 const arr = [...orderedNames]; const [m] = arr.splice(from, 1); arr.splice(idx, 0, m);
                 f.visibleColumns = arr.filter(n => f.visibleColumns.includes(n)); host.requestUpdate();
             }}>
-                        <span class="drag-handle">&#9776;</span>
-                        <input type="checkbox" ?checked=${isVisible} @change=${(e) => {
+                        <span class="drag-handle"><uui-icon name="icon-navigation"></uui-icon></span>
+                        <input type="checkbox" .checked=${isVisible} @change=${(e) => {
                 if (!f.visibleColumns) f.visibleColumns = [...allFieldNames];
                 if (e.target.checked) { if (!f.visibleColumns.includes(name)) f.visibleColumns.push(name); }
                 else { f.visibleColumns = f.visibleColumns.filter(c => c !== name); } host.requestUpdate();
@@ -350,7 +359,7 @@ function _renderColumnSettings(host, f) {
                         ${name}</label>`;
     })}
             </div>
-        </div>`;
+        </uui-box>`;
 }
 
 function _renderTypePicker(host) {
@@ -362,14 +371,18 @@ function _renderTypePicker(host) {
     return html`
         <div class="overlay overlay-top" @click=${(e) => { if (e.target === e.currentTarget) { host._typePickerIdx = -1; host.requestUpdate(); } }}>
             <div class="type-picker-dialog">
-                <div class="type-picker-header"><h3>Select Field Type</h3>
-                    <uui-button look="secondary" compact @click=${() => { host._typePickerIdx = -1; host.requestUpdate(); }}>&#10005;</uui-button></div>
+                <div class="type-picker-header"><h3>Select Field Type</h3></div>
                 <div class="type-picker-search"><uui-input placeholder="Search..." .value=${host._typePickerSearch || ''} @input=${(e) => { host._typePickerSearch = e.target.value; host.requestUpdate(); }}></uui-input></div>
                 <div class="type-picker-list">
                     ${filtered.map(ft => html`<button class="type-picker-option ${ft.type === currentType ? 'active' : ''}"
                         @click=${() => { host._updateFieldInColumn(gIdx, cIdx, idx, 'type', ft.type); host._typePickerIdx = -1; host.requestUpdate(); }}>
                         <span class="type-picker-label">${ft.label}</span><span class="type-picker-type">${ft.type}</span></button>`)}
                     ${filtered.length === 0 ? html`<div class="type-picker-empty">No matching types</div>` : nothing}
+                </div>
+                <div class="type-picker-footer">
+                    <uui-button class="dlg-close" look="secondary" @click=${() => { host._typePickerIdx = -1; host.requestUpdate(); }}>
+                        <uui-icon name="icon-delete"></uui-icon> Close
+                    </uui-button>
                 </div>
             </div>
         </div>`;

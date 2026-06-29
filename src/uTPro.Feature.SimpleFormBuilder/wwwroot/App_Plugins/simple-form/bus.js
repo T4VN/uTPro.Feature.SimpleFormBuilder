@@ -6,6 +6,9 @@
 // Events:
 //   'new'     – sidebar "+" button asks the dashboard to start a new form
 //   'select'  – sidebar asks the dashboard to open a form by id (detail = id)
+//   'entries' – sidebar asks the dashboard to open a form's entries (detail = id)
+//   'export'  – sidebar asks the dashboard to export a form (detail = id)
+//   'delete'  – sidebar asks the dashboard to delete a form (detail = id)
 //   'active'  – dashboard tells the sidebar which form is focused (detail = id, 0 = none)
 //   'notify'  – any app shows a transient message via the dashboard banner (detail = text)
 //   'refresh' – dashboard tells the sidebar the form list changed (re-fetch)
@@ -16,6 +19,15 @@ class FormBus extends EventTarget {
     }
     selectForm(id) {
         this.dispatchEvent(new CustomEvent('select', { detail: id }));
+    }
+    requestEntries(id) {
+        this.dispatchEvent(new CustomEvent('entries', { detail: id }));
+    }
+    requestExport(id) {
+        this.dispatchEvent(new CustomEvent('export', { detail: id }));
+    }
+    requestDelete(id) {
+        this.dispatchEvent(new CustomEvent('delete', { detail: id }));
     }
     setActive(id) {
         this.dispatchEvent(new CustomEvent('active', { detail: id }));

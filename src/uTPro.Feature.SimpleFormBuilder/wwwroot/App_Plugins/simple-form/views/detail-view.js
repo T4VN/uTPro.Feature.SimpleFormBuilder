@@ -16,7 +16,6 @@ export function renderDetail(host) {
             <div class="detail-panel">
                 <div class="detail-header">
                     <h3>Entry #${s.id}</h3>
-                    <uui-button look="secondary" compact @click=${() => host._closeDetail()}>&#10005; Close</uui-button>
                 </div>
                 <div class="detail-body">
                     <div class="detail-row">
@@ -34,11 +33,16 @@ export function renderDetail(host) {
                         </div>
                     `)}
                 </div>
-                ${isAdmin ? html`
-                    <div class="detail-footer">
-                        <uui-button look="outline" color="danger" @click=${() => { host._deleteEntry(s.id); host._closeDetail(); }}>Delete</uui-button>
-                    </div>
-                ` : nothing}
+                <div class="detail-footer">
+                    ${isAdmin ? html`
+                        <uui-button look="outline" color="danger" @click=${() => { host._deleteEntry(s.id); host._closeDetail(); }}>
+                            <uui-icon name="icon-trash"></uui-icon> Delete
+                        </uui-button>
+                    ` : nothing}
+                    <uui-button class="dlg-close" look="secondary" @click=${() => host._closeDetail()}>
+                        <uui-icon name="icon-delete"></uui-icon> Close
+                    </uui-button>
+                </div>
             </div>
         </div>`;
 }

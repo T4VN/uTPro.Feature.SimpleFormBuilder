@@ -21,6 +21,8 @@ public interface IuTProSimpleFormService
     FormViewModel? GetFormByAlias(string alias);
     (bool Success, string Message, int Id) SaveForm(SaveFormRequest request);
     (bool Success, string Message) DeleteForm(int id);
+    FormExportModel? ExportForm(int id);
+    (bool Success, string Message, int Id) ImportForm(FormExportModel model);
     (bool Success, string Message) SubmitForm(string alias, Dictionary<string, string> data, string? ip, string? ua);
     PagedResult<EntryViewModel> GetEntries(int formId, int skip, int take, bool canViewSensitive = false, string? search = null, DateTime? dateFrom = null, DateTime? dateTo = null);
     (bool Success, string Message) DeleteEntry(int id);
@@ -33,7 +35,7 @@ internal class uTProSimpleFormService(
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private const string ProtectorPurpose = "uTPro.uTProSimpleForm.SensitiveField";
-    private const string EncryptedPrefix = "🔒:";
+    private const string EncryptedPrefix = "uTProEncode:";
     private const string MaskedValue = "*****";
 
     private IDataProtector Protector => dataProtectionProvider.CreateProtector(ProtectorPurpose);
@@ -41,21 +43,36 @@ internal class uTProSimpleFormService(
     public List<FormViewModel> GetAllForms()
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dtos = scope.Database.Fetch<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm ORDER BY Name");
-        return dtos.Select(MapToViewModel).ToList();
+        var dtos = scope.Database.Fetch<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm ORDER BY Name");
+        var models = dtos.Select(MapToViewModel).ToList();
+
+        // Populate entry counts in a single grouped query.
+        var counts = scope.Database
+            .Fetch<EntryCountRow>("SELECT FormId, COUNT(*) AS Cnt FROM uTProSimpleFormEntry GROUP BY FormId")
+            .ToDictionary(r => r.FormId, r => (int)r.Cnt);
+        foreach (var m in models)
+            m.EntryCount = counts.TryGetValue(m.Id, out var c) ? c : 0;
+
+        return models;
+    }
+
+    private class EntryCountRow
+    {
+        public int FormId { get; set; }
+        public long Cnt { get; set; }
     }
 
     public FormViewModel? GetForm(int id)
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Id = @0", id);
+        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Id = @0", id);
         return dto == null ? null : MapToViewModel(dto);
     }
 
     public FormViewModel? GetFormByAlias(string alias)
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Alias = @0", alias);
+        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Alias = @0", alias);
         return dto == null ? null : MapToViewModel(dto);
     }
 
@@ -71,7 +88,7 @@ internal class uTProSimpleFormService(
 
             if (request.Id > 0)
             {
-                var existing = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Id = @0", request.Id);
+                var existing = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Id = @0", request.Id);
                 if (existing == null) return (false, "Form not found", 0);
 
                 existing.Name = request.Name;
@@ -88,13 +105,14 @@ internal class uTProSimpleFormService(
                     ? JsonSerializer.Serialize(request.VisibleColumns, JsonOpts) : null;
                 existing.EnableRenderApi = request.EnableRenderApi;
                 existing.EnableEntriesApi = request.EnableEntriesApi;
+                existing.ShowInPicker = request.ShowInPicker;
                 existing.UpdatedUtc = now;
                 db.Update(existing);
                 return (true, "Form updated", existing.Id);
             }
             else
             {
-                var dup = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Alias = @0", request.Alias);
+                var dup = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Alias = @0", request.Alias);
                 if (dup != null) return (false, "Alias already exists", 0);
 
                 var dto = new uTProSimpleFormDto
@@ -113,6 +131,7 @@ internal class uTProSimpleFormService(
                         ? JsonSerializer.Serialize(request.VisibleColumns, JsonOpts) : null,
                     EnableRenderApi = request.EnableRenderApi,
                     EnableEntriesApi = request.EnableEntriesApi,
+                    ShowInPicker = request.ShowInPicker,
                     CreatedUtc = now,
                     UpdatedUtc = now
                 };
@@ -132,8 +151,8 @@ internal class uTProSimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            scope.Database.Execute("DELETE FROM utpro_uTProSimpleFormEntry WHERE FormId = @0", id);
-            scope.Database.Execute("DELETE FROM utpro_uTProSimpleForm WHERE Id = @0", id);
+            scope.Database.Execute("DELETE FROM uTProSimpleFormEntry WHERE FormId = @0", id);
+            scope.Database.Execute("DELETE FROM uTProSimpleForm WHERE Id = @0", id);
             return (true, "Deleted");
         }
         catch (Exception ex)
@@ -143,12 +162,94 @@ internal class uTProSimpleFormService(
         }
     }
 
+    public FormExportModel? ExportForm(int id)
+    {
+        var form = GetForm(id);
+        if (form == null) return null;
+        return new FormExportModel
+        {
+            Name = form.Name,
+            Alias = form.Alias,
+            Fields = form.Fields,
+            Groups = form.Groups,
+            SuccessMessage = form.SuccessMessage,
+            RedirectUrl = form.RedirectUrl,
+            EmailTo = form.EmailTo,
+            EmailSubject = form.EmailSubject,
+            StoreEntries = form.StoreEntries,
+            IsEnabled = form.IsEnabled,
+            VisibleColumns = form.VisibleColumns,
+            EnableRenderApi = form.EnableRenderApi,
+            EnableEntriesApi = form.EnableEntriesApi,
+            ShowInPicker = form.ShowInPicker
+        };
+    }
+
+    public (bool Success, string Message, int Id) ImportForm(FormExportModel model)
+    {
+        if (model == null) return (false, "Invalid import file", 0);
+        if (string.IsNullOrWhiteSpace(model.Name) && string.IsNullOrWhiteSpace(model.Alias))
+            return (false, "Import file does not contain a valid form", 0);
+
+        var name = string.IsNullOrWhiteSpace(model.Name) ? model.Alias : model.Name;
+        var baseAlias = string.IsNullOrWhiteSpace(model.Alias)
+            ? Slugify(name)
+            : model.Alias;
+
+        var request = new SaveFormRequest
+        {
+            Id = 0,
+            Name = name,
+            Alias = EnsureUniqueAlias(baseAlias),
+            Fields = model.Fields ?? [],
+            Groups = model.Groups ?? [],
+            SuccessMessage = model.SuccessMessage,
+            RedirectUrl = model.RedirectUrl,
+            EmailTo = model.EmailTo,
+            EmailSubject = model.EmailSubject,
+            StoreEntries = model.StoreEntries,
+            IsEnabled = model.IsEnabled,
+            VisibleColumns = model.VisibleColumns,
+            EnableRenderApi = model.EnableRenderApi,
+            EnableEntriesApi = model.EnableEntriesApi,
+            ShowInPicker = model.ShowInPicker
+        };
+
+        return SaveForm(request);
+    }
+
+    // Returns the alias unchanged when free, otherwise appends -copy, -copy-2, ... until unique.
+    private string EnsureUniqueAlias(string alias)
+    {
+        using var scope = scopeProvider.CreateScope(autoComplete: true);
+        var db = scope.Database;
+        bool Exists(string a) => db.SingleOrDefault<uTProSimpleFormDto>(
+            "SELECT * FROM uTProSimpleForm WHERE Alias = @0", a) != null;
+
+        if (!Exists(alias)) return alias;
+
+        var candidate = alias + "-copy";
+        var i = 2;
+        while (Exists(candidate))
+            candidate = $"{alias}-copy-{i++}";
+        return candidate;
+    }
+
+    private static string Slugify(string input)
+    {
+        var slug = new string((input ?? string.Empty).ToLowerInvariant()
+            .Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray());
+        while (slug.Contains("--")) slug = slug.Replace("--", "-");
+        slug = slug.Trim('-');
+        return string.IsNullOrEmpty(slug) ? "form" : slug;
+    }
+
     public (bool Success, string Message) SubmitForm(string alias, Dictionary<string, string> data, string? ip, string? ua)
     {
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            var form = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM utpro_uTProSimpleForm WHERE Alias = @0", alias);
+            var form = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Alias = @0", alias);
             if (form == null) return (false, "Form not found");
             if (!form.IsEnabled) return (false, "Form is disabled");
 
@@ -211,7 +312,7 @@ internal class uTProSimpleFormService(
         using var scope = scopeProvider.CreateScope(autoComplete: true);
         var db = scope.Database;
         var sql = scope.SqlContext.Sql()
-            .Select("*").From("utpro_uTProSimpleFormEntry")
+            .Select("*").From("uTProSimpleFormEntry")
             .Where("FormId = @0", formId);
 
         if (dateFrom.HasValue)
@@ -236,7 +337,7 @@ internal class uTProSimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            scope.Database.Execute("DELETE FROM utpro_uTProSimpleFormEntry WHERE Id = @0", id);
+            scope.Database.Execute("DELETE FROM uTProSimpleFormEntry WHERE Id = @0", id);
             return (true, "Deleted");
         }
         catch (Exception ex)
@@ -260,6 +361,7 @@ internal class uTProSimpleFormService(
             ? null : JsonSerializer.Deserialize<List<string>>(dto.VisibleColumnsJson, JsonOpts),
         EnableRenderApi = dto.EnableRenderApi,
         EnableEntriesApi = dto.EnableEntriesApi,
+        ShowInPicker = dto.ShowInPicker,
         CreatedUtc = dto.CreatedUtc, UpdatedUtc = dto.UpdatedUtc
     };
 

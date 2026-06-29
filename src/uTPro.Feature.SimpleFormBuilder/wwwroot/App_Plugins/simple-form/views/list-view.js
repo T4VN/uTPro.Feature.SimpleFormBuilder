@@ -20,6 +20,7 @@ export function renderList(host) {
         <div class="list-toolbar">
             ${canEdit ? html`
                 <uui-button look="primary" @click=${() => host._newForm()}>Create</uui-button>
+                <uui-button look="outline" @click=${() => host._importForm()}>Import</uui-button>
             ` : nothing}
             ${host._forms.length ? html`
                 <uui-input
@@ -28,7 +29,7 @@ export function renderList(host) {
                     placeholder="Type to filter..."
                     label="Filter forms"
                     .value=${host._listSearch || ''}
-                    @input=${(e) => { host._listSearch = e.target.value; }}>
+                    @input=${(e) => { host._listSearch = e.target.value; host._syncUrl(); }}>
                 </uui-input>
             ` : nothing}
         </div>
@@ -43,7 +44,7 @@ export function renderList(host) {
                 <uui-table-head>
                     <uui-table-head-cell>Name</uui-table-head-cell>
                     <uui-table-head-cell>Alias</uui-table-head-cell>
-                    <uui-table-head-cell>Fields</uui-table-head-cell>
+                    <uui-table-head-cell>Entries</uui-table-head-cell>
                     <uui-table-head-cell>Status</uui-table-head-cell>
                     <uui-table-head-cell style="width:260px">Actions</uui-table-head-cell>
                 </uui-table-head>
@@ -55,7 +56,7 @@ export function renderList(host) {
                                 : html`<button type="button" class="link" @click=${() => host._viewEntries(f.id)} title="View entries">${f.name}</button>`}
                         </uui-table-cell>
                         <uui-table-cell><code>${f.alias}</code></uui-table-cell>
-                        <uui-table-cell>${f.fields?.length || 0}</uui-table-cell>
+                        <uui-table-cell>${f.entryCount ?? 0}</uui-table-cell>
                         <uui-table-cell>${f.isEnabled ? html`<span class="badge on">Active</span>` : html`<span class="badge off">Disabled</span>`}</uui-table-cell>
                         <uui-table-cell class="action-cell">
                             ${canEdit ? html`
@@ -63,6 +64,7 @@ export function renderList(host) {
                             ` : nothing}
                             <uui-button look="outline" compact @click=${() => host._viewEntries(f.id)}>Entries</uui-button>
                             ${canEdit ? html`
+                                <uui-button look="outline" compact @click=${() => host._exportForm(f.id)}>Export</uui-button>
                                 <uui-button look="outline" color="danger" compact @click=${() => host._deleteForm(f.id)}>Delete</uui-button>
                             ` : nothing}
                         </uui-table-cell>

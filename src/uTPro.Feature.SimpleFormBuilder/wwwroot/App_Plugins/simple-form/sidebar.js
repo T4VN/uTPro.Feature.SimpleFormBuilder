@@ -90,14 +90,42 @@ export class UtproSimpleFormSidebar extends UmbLitElement {
 
     _menuImport() {
         this._closeMenu();
-        // Placeholder for the upcoming Import feature.
-        formBus.notify('Import is coming soon.');
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.addEventListener('change', async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                let model;
+                try { model = JSON.parse(text); }
+                catch { formBus.notify('Invalid JSON file'); return; }
+                const res = await apiPost(API + '/import', model, this.#authContext);
+                formBus.notify(res?.message || 'Form imported');
+                await this._load();
+                formBus.refresh();
+                if (res?.id) { this._open(res.id); }
+            } catch (e) {
+                formBus.notify(e.message || 'Import failed');
+            }
+        });
+        input.click();
     }
 
     _open(id) {
         this._selectedId = id;
         formBus.selectForm(id);
     }
+
+    _closeItemMenu(id) {
+        this.renderRoot?.querySelector(`#utpro-fa-${id}`)?.hidePopover?.();
+    }
+
+    _itemEdit(id) { this._closeItemMenu(id); this._open(id); }
+    _itemEntries(id) { this._closeItemMenu(id); this._selectedId = id; formBus.requestEntries(id); }
+    _itemExport(id) { this._closeItemMenu(id); formBus.requestExport(id); }
+    _itemDelete(id) { this._closeItemMenu(id); formBus.requestDelete(id); }
 
     render() {
         return html`
@@ -148,9 +176,49 @@ export class UtproSimpleFormSidebar extends UmbLitElement {
                         label=${f.name}
                         ?active=${f.id === this._selectedId}
                         @click=${() => this._open(f.id)}>
-                        <uui-icon slot="icon" name="icon-form"></uui-icon>
+                        <uui-icon slot="icon" name="icon-document"></uui-icon>
+                        ${this._isAdmin ? html`
+                            <uui-button
+                                slot="actions"
+                                look="secondary"
+                                compact
+                                label="Actions"
+                                title="Actions"
+                                popovertarget="utpro-fa-${f.id}"
+                                @click=${(e) => e.stopPropagation()}>
+                                <uui-symbol-more></uui-symbol-more>
+                            </uui-button>
+                        ` : html`
+                            <uui-button
+                                slot="actions"
+                                look="secondary"
+                                compact
+                                label="Entries"
+                                title="Entries"
+                                @click=${(e) => { e.stopPropagation(); this._itemEntries(f.id); }}>
+                                <uui-icon name="icon-list"></uui-icon>
+                            </uui-button>
+                        `}
                     </uui-menu-item>`)}
-            </div>`;
+            </div>
+
+            ${this._isAdmin ? this._forms.map(f => html`
+                <uui-popover-container id="utpro-fa-${f.id}" placement="bottom-end">
+                    <div class="menu-popover">
+                        <uui-menu-item label="Edit" @click=${() => this._itemEdit(f.id)}>
+                            <uui-icon slot="icon" name="icon-edit"></uui-icon>
+                        </uui-menu-item>
+                        <uui-menu-item label="Entries" @click=${() => this._itemEntries(f.id)}>
+                            <uui-icon slot="icon" name="icon-list"></uui-icon>
+                        </uui-menu-item>
+                        <uui-menu-item label="Export" @click=${() => this._itemExport(f.id)}>
+                            <uui-icon slot="icon" name="icon-download-alt"></uui-icon>
+                        </uui-menu-item>
+                        <uui-menu-item label="Delete" @click=${() => this._itemDelete(f.id)}>
+                            <uui-icon slot="icon" name="icon-trash"></uui-icon>
+                        </uui-menu-item>
+                    </div>
+                </uui-popover-container>`) : nothing}`;
     }
 
     static styles = css`

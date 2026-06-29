@@ -3,6 +3,13 @@ import { css } from '@umbraco-cms/backoffice/external/lit';
 export const dashboardStyles = css`
     :host { display: block; padding: 20px; }
 
+    /* Stacked panels (settings boxes in the editor) need breathing room
+       between them now that there is no single outer box wrapper. */
+    uui-box { display: block; }
+    uui-box + uui-box,
+    .toolbar + uui-box,
+    uui-box + .section-header { margin-top: 16px; }
+
     /* ── List toolbar (Create + filter) ── */
     .list-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
     .list-toolbar .list-filter { flex: 1; max-width: 420px; }
@@ -11,11 +18,6 @@ export const dashboardStyles = css`
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
     .toolbar h2 { margin: 0; font-size: 1.3rem; }
     .toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-
-    /* ── Messages ── */
-    .msg { padding: 8px 14px; border-radius: 4px; margin-bottom: 10px; font-size: 0.9rem; }
-    .error { background: #fde8e8; color: #c0392b; }
-    .success { background: #e8fde8; color: #27ae60; }
 
     /* ── States ── */
     .loading { display: flex; justify-content: center; padding: 40px; }
@@ -43,6 +45,7 @@ export const dashboardStyles = css`
     /* ── Section headers ── */
     .section-header { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 8px; }
     .section-header h3 { margin: 0; }
+    .section-header .header-actions { display: flex; gap: 8px; align-items: center; }
 
     /* ── Field cards ── */
     .field-card {
@@ -101,6 +104,7 @@ export const dashboardStyles = css`
     .type-picker-label { flex: 1; }
     .type-picker-type { color: #999; font-size: 0.8rem; font-family: monospace; }
     .type-picker-empty { padding: 20px; text-align: center; color: #888; font-style: italic; }
+    .type-picker-footer { padding: 12px 18px; border-top: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
     .field-body {
         display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px;
     }
@@ -129,15 +133,9 @@ export const dashboardStyles = css`
         background: #fff; box-sizing: border-box;
     }
 
-    /* ── Settings panel ── */
-    .settings-panel {
-        margin-bottom: 16px; padding: 16px;
-        background: var(--uui-color-surface-alt, #f0f4ff);
-        border: 1px solid #c8d6f0; border-radius: 6px;
-    }
-    .settings-header { margin-bottom: 12px; }
-    .settings-header h3 { margin: 0 0 4px; font-size: 1rem; }
-    .settings-hint { font-size: 0.8rem; color: #888; }
+    /* ── Settings (hosted in uui-box) ── */
+    .gs-toggles { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+    .settings-hint { display: block; margin-bottom: 8px; font-size: 0.8rem; color: #888; }
     .settings-body {
         display: flex; flex-wrap: wrap; gap: 10px 20px;
     }
@@ -178,6 +176,10 @@ export const dashboardStyles = css`
         padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;
         font-size: 0.85rem; background: #fff; height: 32px; box-sizing: border-box;
     }
+    .filter-dates .quick-select {
+        padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;
+        font-size: 0.85rem; background: #fff; height: 32px; box-sizing: border-box; cursor: pointer;
+    }
     .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; }
     .page-info { color: #888; font-size: 0.9rem; }
     .cell-truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -206,13 +208,15 @@ export const dashboardStyles = css`
     }
     .detail-label { font-weight: 600; min-width: 120px; color: #555; font-size: 0.9rem; }
     .detail-value { flex: 1; word-break: break-word; white-space: pre-wrap; }
-    .detail-footer { padding: 12px 20px; border-top: 1px solid #e0e0e0; display: flex; justify-content: flex-end; }
+    .detail-footer { padding: 12px 20px; border-top: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 
-    /* ── Group cards ── */
+    /* All dialog footer buttons are grouped on the right (Close is the last/right-most). */
+    .dlg-close { }
+
+    /* ── Group cards (uui-box provides the border/surface) ── */
     .group-card {
-        border: 2px solid var(--uui-color-border, #ccc); border-radius: 8px;
-        margin-bottom: 16px; overflow: hidden;
-        background: var(--uui-color-surface, #fff);
+        display: block;
+        margin-bottom: 16px;
     }
     .group-header {
         display: flex; align-items: center; gap: 12px; padding: 12px 16px;
@@ -225,7 +229,7 @@ export const dashboardStyles = css`
         font-size: 0.8rem; font-weight: 500; min-width: 100px;
     }
     .group-setting-label uui-input { width: 100%; min-width: 80px; }
-    .group-actions { display: flex; gap: 4px; margin-left: auto; }
+    .group-actions { display: flex; gap: 4px; margin-left: auto; align-self: flex-end; }
     .group-preview {
         padding: 10px 16px; border-bottom: 1px solid #eee;
         background: var(--uui-color-surface-alt, #fafafa);
@@ -242,13 +246,19 @@ export const dashboardStyles = css`
     }
     .group-columns-container {
         display: flex; gap: 12px; padding: 12px 16px; flex-wrap: wrap;
+        align-items: stretch;
     }
 
-    /* ── Column cards within a group ── */
+    /* ── Column cards within a group (plain div for deterministic equal-height flex layout) ── */
     .col-card {
+        display: flex;
+        flex-direction: column;
+        align-self: stretch;
         min-width: 200px; box-sizing: border-box;
-        border: 1px dashed var(--uui-color-border, #ccc); border-radius: 6px;
-        background: var(--uui-color-surface-alt, #fafafa);
+        border: 1px solid var(--uui-color-border, #e0e0e0);
+        border-radius: 6px;
+        background: var(--uui-color-surface, #fff);
+        overflow: hidden;
     }
     .col-header {
         display: flex; align-items: center; gap: 8px; padding: 8px 12px;
@@ -262,9 +272,10 @@ export const dashboardStyles = css`
     }
     .col-width-label uui-input { width: 55px; }
     .col-actions { margin-left: auto; }
-    .col-fields { padding: 8px 10px; }
+    .col-fields { padding: 8px 10px; flex: 1; }
     .col-add-field {
-        text-align: center; padding: 6px 0; margin-top: 4px;
+        display: flex; justify-content: center; align-items: center; gap: 8px;
+        flex-wrap: wrap; padding: 6px 0; margin-top: 4px;
         border-top: 1px dashed #ddd;
     }
 
@@ -311,7 +322,6 @@ export const dashboardStyles = css`
     }
     .fc-btn:hover { background: #f0f0f0; color: #333; }
     .fc-btn:disabled { opacity: 0.3; cursor: default; }
-    .fc-btn-danger:hover { background: #fde8e8; color: #c0392b; }
 
     /* ── Field settings dialog ── */
     .field-dialog {
@@ -325,7 +335,7 @@ export const dashboardStyles = css`
     }
     .field-dialog-header h3 { margin: 0; font-size: 1rem; }
     .field-dialog-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
-    .field-dialog-footer { padding: 12px 20px; border-top: 1px solid #e0e0e0; display: flex; justify-content: flex-end; }
+    .field-dialog-footer { padding: 12px 20px; border-top: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
     .fd-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .fd-label { font-weight: 600; font-size: 0.85rem; min-width: 80px; }
     .fd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
