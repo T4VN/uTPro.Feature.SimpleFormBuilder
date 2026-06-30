@@ -1,0 +1,37 @@
+@*
+    EXAMPLE custom field partial (consumer side).
+
+    Lives in the TEST SITE — not in the package. Because it sits at the
+    conventional path ~/Views/Partials/uTProSimpleForm/Fields/{type}.cshtml,
+    the package's FieldPartialResolver finds it automatically for the
+    "star-rating" type registered in StarRatingFieldComposer.cs.
+*@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
+@{
+    var h = new FieldHelper(Model, ViewData);
+    var max = int.TryParse(h.Attr("max", "5"), out var m) ? m : 5;
+}
+
+@h.Label()
+<div class="sf-star-rating">
+    @for (var i = 1; i <= max; i++)
+    {
+        <label class="sf-star">
+            <input type="radio" name="@h.Name" value="@i"
+                   @h.RequiredAttr() @h.DataMsgAttr() />
+            <span>&#9733;</span>
+        </label>
+    }
+</div>
+@h.Error()
+
+<style>
+    .sf-star-rating { display: inline-flex; flex-direction: row-reverse; gap: 4px; font-size: 1.6rem; }
+    .sf-star-rating .sf-star input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .sf-star-rating .sf-star span { color: #ccc; cursor: pointer; transition: color .15s; }
+    .sf-star-rating .sf-star:hover span,
+    .sf-star-rating .sf-star:hover ~ .sf-star span,
+    .sf-star-rating .sf-star input:checked ~ span,
+    .sf-star-rating .sf-star:has(input:checked) span { color: #f5b301; }
+</style>

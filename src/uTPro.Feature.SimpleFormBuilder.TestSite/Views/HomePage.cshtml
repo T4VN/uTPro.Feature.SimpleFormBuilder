@@ -1,0 +1,6 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<HomePage>
+@{
+	Layout = null;
+}
+@await Component.InvokeAsync("uTProSimpleForm", new { alias = @Model.Form })
