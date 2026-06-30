@@ -4,10 +4,10 @@
 // e.g. as an alternative to hard-coding the form in markup.
 //
 // NOTE: publish-time blocking (when the chosen form is no longer available) is
-// enforced SERVER-SIDE in FormPickerPublishValidator.cs. We deliberately avoid a
-// client-side custom validator here because it can trip an Umbraco core hint
-// mapping bug. This element only provides a clear visual cue + lets the editor
-// clear/replace a stale value.
+// enforced SERVER-SIDE by FormPickerValueValidator (PropertyEditors/FormPickerDataEditor.cs).
+// We deliberately avoid a client-side custom validator here because it can trip an
+// Umbraco core hint-mapping bug. This element only provides a clear visual cue +
+// lets the editor clear/replace a stale value.
 
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { html, nothing } from '@umbraco-cms/backoffice/external/lit';

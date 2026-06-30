@@ -84,8 +84,7 @@ public class FormPickerValueValidator : IValueValidator
         return available
             ? []
             : [new ValidationResult(
-                $"The selected form '{alias}' is no longer available. Choose another form or clear the value.",
-                ["value"])];
+                $"The selected form '{alias}' is no longer available. Choose another form or clear the value.")];
     }
 
     // Reads the "allowedForms" array from the data type configuration, tolerating

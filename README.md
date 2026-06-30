@@ -10,7 +10,7 @@ Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
 
 - Dedicated **uTPro Form** section in the top menu bar, with a left **Forms** tree (like Dictionary)
 - Visual builder: groups → 12-column layout → fields, drag-free ordering, live settings
-- **Copy / paste** groups, columns and fields via the system clipboard (works across forms)
+- **Copy / paste** groups, columns and fields via the browser's `localStorage` (works across forms, even after a page reload)
 - **Import / Export** form definitions as JSON (layout only — no entries)
 - **19 built-in field types** and a 2-step custom field type extension point
 - Client-side validation with multi-language (Umbraco Dictionary) messages
@@ -125,6 +125,19 @@ The package ships a ready-to-use **uTPro Form Picker** data type (created automa
 
 The dropdown only lists forms whose **Show in content picker** toggle (form *Settings*) is on, so you can keep internal/system forms out of the editor's choices while they keep working everywhere else.
 
+### Restricting a picker to specific forms (data type setting)
+
+When you create/edit a **uTPro Form Picker** data type, its **Settings** show an **Allowed forms** list of *every* form (so you can see and tick any of them). Tick the forms this particular picker should offer:
+
+- **Leave it empty** → default behaviour: every form with *Show in content picker* on.
+- **Tick one or more forms** → the picker offers only those forms — but the *Show in content picker* rule still applies, so a ticked form appears in Content only if it also has *Show in content picker* enabled.
+
+In other words, the Content list is always **(forms with *Show in content picker* on)**, optionally narrowed to the ticked **Allowed forms**.
+
+### Publish validation
+
+If a content item already stores a form that later becomes unavailable (the form was deleted, had *Show in content picker* turned off, or was removed from the picker's *Allowed forms*), the picker shows it in red as **"— not available"**. **Saving/publishing is then blocked** by a server-side validator with an inline error on the property until the editor chooses another form or clears it (**(none)**). This is enforced by `FormPickerValueValidator` (`PropertyEditors/FormPickerDataEditor.cs`), so it holds even if the value is set through the API.
+
 ---
 
 ## Import / Export
@@ -143,10 +156,8 @@ Requires edit permission (`canEdit`).
 The builder can copy a whole **group**, **column** or **field** and paste it elsewhere — even into a different form.
 
 - Copy buttons sit on each group/column/field; **Paste** buttons appear only when the clipboard holds a matching item.
-- Backed by the **system clipboard** (not local storage), so copying something else makes the Paste buttons disappear.
+- Backed by the browser's **`localStorage`**, so the copied item survives navigating between forms and even a full page reload. Copying a different item type swaps what the Paste buttons offer.
 - On paste, all internal IDs are regenerated and colliding field `name`s are de-duped (`_copy`, `_copy2`, …) so submissions never clash.
-
-> Reading the clipboard requires a one-time browser permission prompt (granted on the first paste). Best used in Chromium-based browsers.
 
 1. Open the **uTPro Form** section
 2. Click **Create** (main area) or **+** (left panel)
@@ -223,13 +234,21 @@ uTPro Form auto-detects the new file. No changes to `Default.cshtml` or any conf
 
 ### Step 2 — Register it in the backoffice picker
 
-Open `Controllers/uTProSimpleFormApiController.cs` and add one line to `FieldTypes()`:
+You **don't** edit the package. From your own site, register the type in a composer:
 
 ```csharp
-new { type = "yourType", label = "Your Type Label" },
+using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Core.DependencyInjection;
+using uTPro.Feature.SimpleFormBuilder.Services;
+
+public class MyFormFieldsComposer : IComposer
+{
+    public void Compose(IUmbracoBuilder builder)
+        => builder.AdduTProSimpleFormFieldType("yourType", "Your Type Label");
+}
 ```
 
-Build. Your new field type now appears in the form builder.
+Register several at once with `builder.AdduTProSimpleFormFieldTypes(...)`. Build and restart. Your new field type now appears in the form builder, merged with the built-in ones.
 
 ---
 
@@ -292,13 +311,25 @@ Wrap an Umbraco Dictionary key in double curly braces:
 @h.Error()
 ```
 
-**Step 2** — Add to `uTProSimpleFormApiController.cs`:
+**Step 2** — Register the type from your site in a composer (no package edits):
 
 ```csharp
-new { type = "star-rating", label = "Star Rating" },
+using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Core.DependencyInjection;
+using uTPro.Feature.SimpleFormBuilder.Services;
+
+public class StarRatingFieldComposer : IComposer
+{
+    public void Compose(IUmbracoBuilder builder)
+        => builder.AdduTProSimpleFormFieldType("star-rating", "Star Rating");
+}
 ```
 
 Done. The field shows up in the builder and renders with stars on the front-end.
+
+> A complete, runnable version of this example ships in the bundled **TestSite**
+> (`Examples/StarRatingFieldComposer.cs` + `Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml`),
+> demonstrating exactly how a NuGet consumer extends the package from their own project.
 
 ---
 
@@ -394,7 +425,11 @@ Two things govern access to the backoffice UI:
 
 ### Test Accounts (TestSite)
 
-The bundled `TestSite` ships with an unattended admin. To exercise the matrix above, create these users (all passwords are the **same as the admin account** — `Admin1234!` in the TestSite):
+The bundled `TestSite` auto-seeds the accounts below on startup (see
+`TestUserSeeder.cs`) so the role/permission matrix can be exercised immediately —
+even after wiping the database. All share the unattended admin password
+`Admin1234!`. The seeder also creates the `sensitiveData` and `Admin Custom`
+user groups and grants them the *uTPro Form* section.
 
 | Email | Group(s) | Behaviour in uTPro Form |
 |---|---|---|
@@ -405,7 +440,7 @@ The bundled `TestSite` ships with an unattended admin. To exercise the matrix ab
 
 > **Key rule:** form management (`canEdit`) is granted by the **Settings** section, not by the Administrators group alone. Sensitive-data viewing is a separate lever, granted only by the Administrators group or the `sensitiveData` group.
 
-> To set up `editorSD`, create a user group with the alias `sensitiveData`, grant it the *uTPro Form* section, and add the user to both the Editor and `sensitiveData` groups.
+> The seeder is **TestSite-only** scaffolding — it is not part of the shipped package. In a real site you create users/groups through the backoffice as usual.
 
 ---
 
@@ -424,9 +459,13 @@ uTPro.Feature.SimpleFormBuilder/
 │   ├── uTProSimpleFormMigration.cs          # AsyncMigrationBase: creates tables + seeds sample data
 │   └── FormPickerDataType.cs                # Ensures the "uTPro Form Picker" data type exists
 ├── Models/
-│   └── FormModels.cs                        # DTOs, ViewModels, request models
+│   ├── FormModels.cs                        # DTOs, ViewModels, request models
+│   └── SimpleFormFieldType.cs               # Field-type descriptor for the custom-type extension point
+├── PropertyEditors/
+│   └── FormPickerDataEditor.cs              # Server schema for the Form Picker + publish-time value validation
 ├── Services/
-│   └── uTProSimpleFormService.cs            # Core logic, encryption, entry management
+│   ├── uTProSimpleFormService.cs            # Core logic, encryption, entry management
+│   └── uTProFormFieldTypeProvider.cs        # IuTProFormFieldTypeProvider + AdduTProSimpleFormFieldType() extension
 ├── ViewComponents/
 │   └── uTProSimpleFormViewComponent.cs      # The @Component.InvokeAsync entry point
 ├── Views/Partials/uTProSimpleForm/
@@ -441,7 +480,7 @@ uTPro.Feature.SimpleFormBuilder/
     │   ├── api.js, styles.js, date-range.js  # API helper + styles + pure date helpers
     │   ├── mixins/                           # url-state / form-actions / builder / clipboard / entries
     │   ├── views/                            # list / editor / entries / detail views
-    │   ├── property-editor/                  # form-picker.element.js (content data type UI)
+    │   ├── property-editor/                  # form-picker.element.js + form-list-config.element.js (content data type UI + settings)
     │   └── lang/en-us.js                     # Localization
     └── uTPro/simple-form/
         ├── css/simple-form.css               # Front-end styles
@@ -510,9 +549,11 @@ Created automatically on first startup.
 
 Migrations run automatically on startup via Umbraco's migration system (`AsyncMigrationBase`, compatible with Umbraco 16–18). The plan has two steps:
 
-1. `utprosimpleform-init` — creates the tables and seeds the sample **Contact Us** form.
-2. `utprosimpleform-showinpicker` — adds the `ShowInPicker` column to existing installs (defaults to `true`, so pre-existing forms stay visible in the picker).
+1. `utprosimpleform-init` — creates the `uTProSimpleForm` / `uTProSimpleFormEntry` tables and seeds the sample **Contact Us** form.
+2. `utprosimpleform-showinpicker` — ensures the `ShowInPicker` column exists (idempotent; only does work on databases created before that column).
 
 On startup the package also ensures a **uTPro Form Picker** data type exists (created once if missing).
 
-To re-run migrations on a fresh database, delete the `uTPro.uTProSimpleForm` key from the `umbracoKeyValue` table.
+To re-run migrations on a fresh database, delete the row keyed
+`Umbraco.Core.Upgrader.State+uTPro.uTProSimpleForm` from the `umbracoKeyValue` table
+(the migration plan is named `uTPro.uTProSimpleForm`).
