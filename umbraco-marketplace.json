@@ -13,7 +13,36 @@
     "uTPro.Feature.FileManager",
     "uTPro.Feature.AuditLog"
   ],
-  "Screenshots": [],
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-builder.png",
+      "Caption": "Visual form builder — groups, 12-column layout and fields"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/field-types.png",
+      "Caption": "19 built-in field types plus a custom field type extension point"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-render.png",
+      "Caption": "Rendered form on the front-end with client-side validation"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/entries.png",
+      "Caption": "Entries with search, date-range filters, paging and CSV export"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/sensitive-data.png",
+      "Caption": "Entries are encrypted at rest and masked when a field is marked Sensitive Data"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-picker.png",
+      "Caption": "Form Picker property editor for choosing a form from content"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/import-export.png",
+      "Caption": "Import / Export form definitions as JSON"
+    }
+  ],
   "LicenseTypes": [
     "Free"
   ],

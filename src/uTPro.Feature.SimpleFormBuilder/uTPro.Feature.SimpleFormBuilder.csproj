@@ -18,9 +18,17 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</PackageProjectUrl>
     <RepositoryUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>v1.0.0: Initial release. Form builder for Umbraco 16, 17 and 18 (multi-target net9.0/net10.0) with groups/columns layout, 19 built-in field types + custom field extension point, client-side validation, sensitive-data encryption, import/export, copy/paste, Form Picker property editor, and public submit/render/entries APIs.</PackageReleaseNotes>
+
+    <!-- Source debugging: SourceLink + deterministic build + symbol package -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
 
     <!-- Serve wwwroot at the site root so App_Plugins/simple-form (backoffice manifest)
          and uTPro/simple-form (front-end assets) resolve at their declared absolute paths. -->
@@ -46,6 +54,11 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\icon.png" Pack="true" PackagePath="\" />
     <None Include="..\..\umbraco-marketplace.json" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- SourceLink: maps PDBs to GitHub source for step-through debugging -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
