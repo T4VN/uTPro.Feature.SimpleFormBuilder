@@ -10,12 +10,13 @@ namespace uTPro.Feature.SimpleFormBuilder.Helpers;
 /// Looks for ~/Views/Partials/uTProSimpleForm/Fields/{type}.cshtml first,
 /// then falls back to ~/Views/Partials/uTProSimpleForm/Fields/_Default.cshtml.
 ///
-/// HOW TO ADD A NEW FIELD TYPE:
+/// HOW TO ADD A NEW FIELD TYPE (from a site that installs the package):
 /// 1. Create a new file: Views/Partials/uTProSimpleForm/Fields/{yourType}.cshtml
 /// 2. Use @model FormFieldViewModel
 /// 3. Use FieldHelper for consistent label/error rendering
-/// 4. Register the type in uTProSimpleFormApiController.FieldTypes() if you want it in the backoffice picker
-/// That's it — the resolver picks it up automatically.
+/// 4. Register it in a composer so it shows in the backoffice picker:
+///        builder.AdduTProSimpleFormFieldType("yourType", "Your Type Label");
+/// That's it — the resolver picks up the partial automatically. No package edits.
 /// </summary>
 public static class FieldPartialResolver
 {

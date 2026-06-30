@@ -28,7 +28,7 @@ public class EnsureFormPickerDataType
 
     private const string DataTypeName = "uTPro Form Picker";
     private const string EditorUiAlias = "uTPro.SimpleForm.FormPicker";
-    private const string EditorAlias = "Umbraco.Plain.String"; // backend schema (stores a string)
+    private const string EditorAlias = "uTPro.SimpleForm.FormPickerValue"; // server schema (string + validation)
 
     private readonly IDataTypeService _dataTypeService;
     private readonly PropertyEditorCollection _propertyEditors;
@@ -59,16 +59,30 @@ public class EnsureFormPickerDataType
 
         try
         {
-            // Already present? Nothing to do.
-            if (await _dataTypeService.GetAsync(DataTypeKey) is not null)
-            {
-                return;
-            }
-
-            // Resolve the backend property editor (schema) that stores the value.
+            // Resolve our server-side schema editor.
             if (!_propertyEditors.TryGet(EditorAlias, out IDataEditor? editor) || editor is null)
             {
                 _logger.LogWarning("Property editor '{Alias}' not found; skipping Form Picker data type.", EditorAlias);
+                return;
+            }
+
+            // Upgrade EVERY data type that uses the Form Picker UI but an older
+            // backend schema (e.g. our bundled one created before this editor
+            // existed, OR data types an editor created by hand). This is what
+            // wires up the server-side validation.
+            var all = await _dataTypeService.GetAllAsync();
+            foreach (var dt in all.Where(d =>
+                         string.Equals(d.EditorUiAlias, EditorUiAlias, StringComparison.Ordinal) &&
+                         !string.Equals(d.EditorAlias, EditorAlias, StringComparison.Ordinal)))
+            {
+                dt.Editor = editor;
+                await _dataTypeService.UpdateAsync(dt, Constants.Security.SuperUserKey);
+                _logger.LogInformation("Upgraded data type '{Name}' to the '{Alias}' editor.", dt.Name, EditorAlias);
+            }
+
+            // Ensure the bundled data type exists (create if missing).
+            if (await _dataTypeService.GetAsync(DataTypeKey) is not null)
+            {
                 return;
             }
 

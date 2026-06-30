@@ -11,7 +11,8 @@ namespace uTPro.Feature.SimpleFormBuilder.Controllers;
 [ApiExplorerSettings(GroupName = "uTPro Simple Form")]
 public class uTProSimpleFormApiController(
     IuTProSimpleFormService formService,
-    IBackOfficeSecurityAccessor backOfficeSecurityAccessor) : ManagementApiControllerBase
+    IBackOfficeSecurityAccessor backOfficeSecurityAccessor,
+    IEnumerable<IuTProFormFieldTypeProvider> fieldTypeProviders) : ManagementApiControllerBase
 {
     // ── Permissions ──
 
@@ -100,29 +101,49 @@ public class uTProSimpleFormApiController(
 
     // ── Field types ──
 
+    // Built-in field types. Consuming sites add more via
+    // IUmbracoBuilder.AdduTProSimpleFormFieldType(...) — no package edits needed.
+    private static readonly SimpleFormFieldType[] BuiltInFieldTypes =
+    [
+        new("div", "Content Block"),
+        new("step", "Form Step"),
+        new("text", "Text Input"),
+        new("email", "Email"),
+        new("tel", "Phone"),
+        new("number", "Number"),
+        new("textarea", "Text Area"),
+        new("select", "Dropdown"),
+        new("checkbox", "Checkbox"),
+        new("radio", "Radio Buttons"),
+        new("file", "File Upload"),
+        new("hidden", "Hidden Field"),
+        new("date", "Date Picker"),
+        new("time", "Time Picker"),
+        new("url", "URL"),
+        new("password", "Password"),
+        new("accept", "Accept / Terms"),
+        new("range", "Range Slider"),
+        new("color", "Color Picker"),
+    ];
+
     [HttpPost("field-types")]
-    public IActionResult FieldTypes() => Ok(new[]
+    public IActionResult FieldTypes()
     {
-        new { type = "div", label = "Content Block" },
-        new { type = "step", label = "Form Step" },
-        new { type = "text", label = "Text Input" },
-        new { type = "email", label = "Email" },
-        new { type = "tel", label = "Phone" },
-        new { type = "number", label = "Number" },
-        new { type = "textarea", label = "Text Area" },
-        new { type = "select", label = "Dropdown" },
-        new { type = "checkbox", label = "Checkbox" },
-        new { type = "radio", label = "Radio Buttons" },
-        new { type = "file", label = "File Upload" },
-        new { type = "hidden", label = "Hidden Field" },
-        new { type = "date", label = "Date Picker" },
-        new { type = "time", label = "Time Picker" },
-        new { type = "url", label = "URL" },
-        new { type = "password", label = "Password" },
-        new { type = "accept", label = "Accept / Terms" },
-        new { type = "range", label = "Range Slider" },
-        new { type = "color", label = "Color Picker" },
-    });
+        // Built-in first, then any consumer-registered custom types. A custom
+        // type re-using a built-in key overrides its label in place.
+        var ordered = new List<SimpleFormFieldType>(BuiltInFieldTypes);
+        var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < ordered.Count; i++) index[ordered[i].Type] = i;
+
+        foreach (var ft in fieldTypeProviders.SelectMany(p => p.GetFieldTypes()))
+        {
+            if (string.IsNullOrWhiteSpace(ft.Type)) continue;
+            if (index.TryGetValue(ft.Type, out var at)) ordered[at] = ft;
+            else { index[ft.Type] = ordered.Count; ordered.Add(ft); }
+        }
+
+        return Ok(ordered.Select(t => new { type = t.Type, label = t.Label }));
+    }
 
     // ── Helpers ──
 

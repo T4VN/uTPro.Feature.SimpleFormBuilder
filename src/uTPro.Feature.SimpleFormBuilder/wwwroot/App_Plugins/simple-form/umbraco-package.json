@@ -1,6 +1,6 @@
 {
   "name": "uTPro.SimpleForm",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "extensions": [
     {
       "type": "section",
@@ -61,7 +61,29 @@
         "label": "uTPro Form Picker",
         "icon": "icon-list",
         "group": "pickers",
-        "propertyEditorSchemaAlias": "Umbraco.Plain.String"
+        "propertyEditorSchemaAlias": "uTPro.SimpleForm.FormPickerValue",
+        "settings": {
+          "properties": [
+            {
+              "alias": "allowedForms",
+              "label": "Allowed forms",
+              "description": "Narrow this picker to a fixed set of forms. The 'Show in content picker' rule still applies, so a ticked form only appears in Content if it also has 'Show in content picker' enabled. Leave empty to show every form that has 'Show in content picker' enabled.",
+              "propertyEditorUiAlias": "uTPro.SimpleForm.FormListConfig"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "propertyEditorUi",
+      "alias": "uTPro.SimpleForm.FormListConfig",
+      "name": "uTPro Form List Config",
+      "element": "/App_Plugins/simple-form/property-editor/form-list-config.element.js",
+      "elementName": "utpro-form-list-config",
+      "meta": {
+        "label": "uTPro Form List",
+        "icon": "icon-list",
+        "group": "pickers"
       }
     }
   ]

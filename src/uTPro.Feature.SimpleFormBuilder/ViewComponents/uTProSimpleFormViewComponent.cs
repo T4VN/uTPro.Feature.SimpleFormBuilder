@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewComponents;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using uTPro.Feature.SimpleFormBuilder.Services;
 
@@ -16,9 +18,21 @@ public class uTProSimpleFormViewComponent(
         bool? showReset = null,
         string? resetBtnText = null)
     {
+        // No form selected ("(none)" or empty) → render nothing at all.
+        if (string.IsNullOrWhiteSpace(alias) ||
+            string.Equals(alias, "(none)", StringComparison.OrdinalIgnoreCase))
+            return new HtmlContentViewComponentResult(HtmlString.Empty);
+
         var form = formService.GetFormByAlias(alias);
         if (form == null || !form.IsEnabled)
-            return Content($"<!-- uTProSimpleForm '{alias}' not found or disabled -->");
+        {
+            // Emit a REAL (invisible) HTML comment. Content() HTML-encodes the
+            // string, which made the comment show up as visible text on the page,
+            // so write raw HTML instead.
+            var safe = alias.Replace("<", string.Empty).Replace(">", string.Empty).Replace("--", "-");
+            return new HtmlContentViewComponentResult(
+                new HtmlString($"<!-- uTProSimpleForm '{safe}' not found or disabled -->"));
+        }
 
         ViewBag.FormCssClass = cssClass ?? "";
         ViewBag.SubmitBtnText = submitBtnText ?? "Submit";

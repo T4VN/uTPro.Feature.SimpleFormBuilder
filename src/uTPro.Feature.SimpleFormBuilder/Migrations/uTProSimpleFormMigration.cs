@@ -113,8 +113,10 @@ public class InituTProSimpleForm : AsyncMigrationBase
 }
 
 /// <summary>
-/// Adds the ShowInPicker column for installs created before the content Form Picker feature.
-/// Existing forms default to visible in the picker (backward compatible).
+/// Kept so the migration plan still recognises installs that already advanced to
+/// the "utprosimpleform-showinpicker" state. Idempotent: the column already
+/// exists on fresh installs (created by <see cref="InituTProSimpleForm"/>), so it
+/// only does work on older databases.
 /// </summary>
 public class AddShowInPickerColumn : AsyncMigrationBase
 {

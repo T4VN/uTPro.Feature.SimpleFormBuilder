@@ -1,56 +1,34 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.FileProviders;
 
 namespace uTPro.Feature.SimpleFormBuilder.Helpers;
 
 /// <summary>
-/// Resolves the correct base path for uTProSimpleForm static assets (CSS, JS).
-/// 
-/// When consumed via NuGet (RCL), assets are served at:
-///   ~/_content/uTPro.Feature.SimpleFormBuilder/uTPro/simple-form/...
-/// 
-/// When consumed via project reference with the copy target, assets are at:
-///   ~/uTPro/simple-form/...
-/// 
-/// This helper checks which path exists at runtime and returns the correct one.
+/// Resolves the base path for uTProSimpleForm front-end static assets (CSS, JS).
+///
+/// The package csproj sets <c>&lt;StaticWebAssetBasePath&gt;/&lt;/StaticWebAssetBasePath&gt;</c>,
+/// which makes the package's wwwroot assets serve from the site ROOT in BOTH
+/// scenarios:
+///   - project reference  → ~/uTPro/simple-form/...
+///   - NuGet package (RCL) → ~/uTPro/simple-form/...   (NOT ~/_content/{id}/...)
+///
+/// So the path is always <c>/uTPro/simple-form/...</c>. The previous runtime
+/// <c>File.Exists</c> detection was unreliable because RCL static web assets are
+/// served virtually and never exist physically in the consuming app's wwwroot,
+/// which made it fall back to the wrong <c>/_content/...</c> path (404).
 /// </summary>
 public static class uTProSimpleFormAssets
 {
-    private const string PackageId = "uTPro.Feature.SimpleFormBuilder";
-    private const string LocalBase = "/uTPro/simple-form";
-    private const string RclBase = "/_content/" + PackageId + "/uTPro/simple-form";
-
-    private static string? _resolvedBase;
+    private const string Base = "/uTPro/simple-form";
 
     /// <summary>Path to simple-form.css</summary>
-    public static string Css => GetBase() + "/css/simple-form.css";
+    public static string Css => Base + "/css/simple-form.css";
 
     /// <summary>Path to simple-form.js</summary>
-    public static string Js => GetBase() + "/js/simple-form.js";
-
-    private static string GetBase()
-    {
-        // Cache after first resolution
-        return _resolvedBase ??= LocalBase;
-    }
+    public static string Js => Base + "/js/simple-form.js";
 
     /// <summary>
-    /// Call once at startup (or first request) to detect whether assets are served
-    /// from the local wwwroot or from the RCL _content path.
+    /// Kept for backward compatibility with existing views; no longer needed since
+    /// the asset base path is fixed at the site root. Intentionally a no-op.
     /// </summary>
-    public static void Resolve(IWebHostEnvironment env)
-    {
-        if (_resolvedBase != null) return;
-
-        // Check if local file exists (project reference / copy target scenario)
-        var localPath = Path.Combine(env.WebRootPath ?? "", "uTPro", "simple-form", "css", "simple-form.css");
-        if (File.Exists(localPath))
-        {
-            _resolvedBase = LocalBase;
-            return;
-        }
-
-        // Otherwise assume RCL content path
-        _resolvedBase = RclBase;
-    }
+    public static void Resolve(IWebHostEnvironment env) { }
 }
