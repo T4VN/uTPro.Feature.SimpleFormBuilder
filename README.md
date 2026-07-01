@@ -4,6 +4,12 @@ A lightweight form builder — create and manage dynamic forms directly from the
 
 Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
 
+[![NuGet](https://img.shields.io/nuget/v/uTPro.Feature.SimpleFormBuilder.svg)](https://www.nuget.org/packages/uTPro.Feature.SimpleFormBuilder)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/uTPro.Feature.SimpleFormBuilder.svg)](https://www.nuget.org/packages/uTPro.Feature.SimpleFormBuilder)
+[![Umbraco Marketplace](https://img.shields.io/badge/Umbraco-Marketplace-blue)](https://marketplace.umbraco.com/package/utpro.feature.simpleformbuilder)
+[![Umbraco 16+](https://img.shields.io/badge/Umbraco-16%2B-3544B1)](https://umbraco.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 ![uTPro Form builder](https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-builder.png)
 
 ---
