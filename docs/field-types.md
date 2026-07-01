@@ -2,6 +2,8 @@
 
 [← Back to README](../README.md)
 
+![Field type picker](../Image/Screenshots/field-types.png)
+
 ## Built-in field types
 
 Ships with 19 field types out of the box:

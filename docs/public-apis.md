@@ -32,6 +32,8 @@ GET /api/utpro/simple-form/entries/{alias}?skip=0&take=20
 
 ## Import / Export
 
+![Import / Export](../Image/Screenshots/import-export.png)
+
 Forms can be moved between environments as JSON (definition only — **no entries, no IDs, no timestamps**).
 
 - **Export** — from the editor toolbar, a form row, or the sidebar **⋯** menu. Downloads `{alias}.form.json`. If the open form has unsaved changes you're asked to save first.

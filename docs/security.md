@@ -31,6 +31,8 @@ Two things govern access to the backoffice UI:
 
 ## How sensitive-data encryption works (encode / decode)
 
+![Sensitive data masked / encrypted in entries](../Image/Screenshots/sensitive-data.png)
+
 Encryption uses **ASP.NET Core Data Protection** (`IDataProtector`) — the same primitive Umbraco itself uses. Under the hood it is authenticated symmetric encryption (**AES-256-CBC + HMAC-SHA256**); the protector is created with a fixed *purpose* string (`uTPro.uTProSimpleForm.SensitiveField`).
 
 **Encode (on submit)** — for each field whose **Type is `password`** or that has **Sensitive Data** enabled:

@@ -10,6 +10,8 @@ Drop this into any Razor view or block component:
 
 The `alias` matches the form you created in the **uTPro Form** section.
 
+![Rendered form on the front-end](../Image/Screenshots/form-render.png)
+
 ## Optional parameters
 
 ```razor

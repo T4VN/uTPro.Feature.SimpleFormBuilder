@@ -33,6 +33,8 @@ After install, a new **uTPro Form** item appears in the top (blue) section menu.
 
 The section uses a familiar two-pane layout:
 
+![Forms list](../Image/Screenshots/form-list.png)
+
 - **Left panel (Forms tree)** — lists all forms. A **+** button creates a new form, and a **⋯ (Options)** menu offers:
   - **Reload** — refresh the list
   - **Create** — new form
@@ -52,7 +54,11 @@ The section uses a familiar two-pane layout:
 7. Set the **Success Message**, optional **Redirect URL**, and **Email Notification**
 8. Save
 
-Your form is ready to [render on the front-end](rendering.md).
+![Form settings](../Image/Screenshots/form-settings.png)
+
+Your form is ready to [render on the front-end](rendering.md). Submissions land in the **Entries** view with search, date-range filters, paging and CSV export:
+
+![Entries](../Image/Screenshots/entries.png)
 
 ## Copy / Paste (Groups, Columns, Fields)
 

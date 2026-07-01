@@ -15,12 +15,20 @@
   ],
   "Screenshots": [
     {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-list.png",
+      "Caption": "Forms list — create, filter, edit, entries, export, delete"
+    },
+    {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-builder.png",
       "Caption": "Visual form builder — groups, 12-column layout and fields"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/field-types.png",
       "Caption": "19 built-in field types plus a custom field type extension point"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-settings.png",
+      "Caption": "Form settings — success message, redirect, email, opt-in APIs"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-render.png",
@@ -32,11 +40,15 @@
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/sensitive-data.png",
-      "Caption": "Entries are encrypted at rest and masked when a field is marked Sensitive Data"
+      "Caption": "Entries encrypted at rest and masked when a field is Sensitive Data"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-picker.png",
-      "Caption": "Form Picker property editor for choosing a form from content"
+      "Caption": "Form Picker data type — restrict to specific Allowed forms"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-picker-content.png",
+      "Caption": "Choosing a form from a content property with the Form Picker"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/import-export.png",
