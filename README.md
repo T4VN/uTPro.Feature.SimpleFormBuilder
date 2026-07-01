@@ -1,6 +1,6 @@
-# uTPro Form — Lightweight Form Builder for Umbraco
+# uTPro Simple Form Builder for Umbraco
 
-Create and manage dynamic forms directly from the Umbraco backoffice — no code required for everyday use. Render any form on the front-end with a single line, and extend it with custom field types without touching the package.
+A lightweight form builder — create and manage dynamic forms directly from the Umbraco backoffice with no code required for everyday use. Render any form on the front-end with a single line, and extend it with custom field types without touching the package.
 
 Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
 
