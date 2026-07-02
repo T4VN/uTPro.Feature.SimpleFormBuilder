@@ -6,9 +6,10 @@ namespace uTPro.Feature.SimpleFormBuilder.Models;
 // ── Database DTOs ──
 
 [TableName("uTProSimpleForm")]
-[PrimaryKey("Id", AutoIncrement = true)]
+[PrimaryKey("id", AutoIncrement = true)]
 public class uTProSimpleFormDto
 {
+    [Column("id")]
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Alias { get; set; } = string.Empty;
@@ -30,9 +31,10 @@ public class uTProSimpleFormDto
 }
 
 [TableName("uTProSimpleFormEntry")]
-[PrimaryKey("Id", AutoIncrement = true)]
+[PrimaryKey("id", AutoIncrement = true)]
 public class uTProSimpleFormEntryDto
 {
+    [Column("id")]
     public int Id { get; set; }
     public int FormId { get; set; }
     public string? DataJson { get; set; }

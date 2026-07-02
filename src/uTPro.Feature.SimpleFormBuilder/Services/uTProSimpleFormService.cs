@@ -2,8 +2,10 @@ using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NPoco;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Infrastructure.Scoping;
+using Umbraco.Extensions;
 using uTPro.Feature.SimpleFormBuilder.Models;
 
 namespace uTPro.Feature.SimpleFormBuilder.Services;
@@ -47,12 +49,21 @@ internal class uTProSimpleFormService(
     public List<FormViewModel> GetAllForms()
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dtos = scope.Database.Fetch<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm ORDER BY Name");
+
+        var sql = scope.SqlContext.Sql()
+            .SelectAll().From<uTProSimpleFormDto>()
+            .OrderBy<uTProSimpleFormDto>(x => x.Name);
+        var dtos = scope.Database.Fetch<uTProSimpleFormDto>(sql);
         var models = dtos.Select(MapToViewModel).ToList();
 
-        // Populate entry counts in a single grouped query.
+        // Populate entry counts in a single grouped query. Identifiers are quoted via the
+        // active SQL syntax provider so the aggregate works across SQL Server, SQLite and
+        // PostgreSQL (which folds unquoted identifiers to lower-case).
+        var syntax = scope.SqlContext.SqlSyntax;
+        var entryTable = syntax.GetQuotedTableName("uTProSimpleFormEntry");
+        var formIdCol = syntax.GetQuotedColumnName("FormId");
         var counts = scope.Database
-            .Fetch<EntryCountRow>("SELECT FormId, COUNT(*) AS Cnt FROM uTProSimpleFormEntry GROUP BY FormId")
+            .Fetch<EntryCountRow>($"SELECT {formIdCol} AS FormId, COUNT(*) AS Cnt FROM {entryTable} GROUP BY {formIdCol}")
             .ToDictionary(r => r.FormId, r => (int)r.Cnt);
         foreach (var m in models)
             m.EntryCount = counts.TryGetValue(m.Id, out var c) ? c : 0;
@@ -69,14 +80,18 @@ internal class uTProSimpleFormService(
     public FormViewModel? GetForm(int id)
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Id = @0", id);
+        var sql = scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
+            .Where<uTProSimpleFormDto>(x => x.Id == id);
+        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>(sql);
         return dto == null ? null : MapToViewModel(dto);
     }
 
     public FormViewModel? GetFormByAlias(string alias)
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Alias = @0", alias);
+        var sql = scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
+            .Where<uTProSimpleFormDto>(x => x.Alias == alias);
+        var dto = scope.Database.SingleOrDefault<uTProSimpleFormDto>(sql);
         return dto == null ? null : MapToViewModel(dto);
     }
 
@@ -92,7 +107,9 @@ internal class uTProSimpleFormService(
 
             if (request.Id > 0)
             {
-                var existing = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Id = @0", request.Id);
+                var existing = db.SingleOrDefault<uTProSimpleFormDto>(
+                    scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
+                        .Where<uTProSimpleFormDto>(x => x.Id == request.Id));
                 if (existing == null) return (false, "Form not found", 0);
 
                 existing.Name = request.Name;
@@ -116,7 +133,9 @@ internal class uTProSimpleFormService(
             }
             else
             {
-                var dup = db.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Alias = @0", request.Alias);
+                var dup = db.SingleOrDefault<uTProSimpleFormDto>(
+                    scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
+                        .Where<uTProSimpleFormDto>(x => x.Alias == request.Alias));
                 if (dup != null) return (false, "Alias already exists", 0);
 
                 var dto = new uTProSimpleFormDto
@@ -155,8 +174,8 @@ internal class uTProSimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            scope.Database.Execute("DELETE FROM uTProSimpleFormEntry WHERE FormId = @0", id);
-            scope.Database.Execute("DELETE FROM uTProSimpleForm WHERE Id = @0", id);
+            scope.Database.DeleteMany<uTProSimpleFormEntryDto>().Where(x => x.FormId == id).Execute();
+            scope.Database.DeleteMany<uTProSimpleFormDto>().Where(x => x.Id == id).Execute();
             return (true, "Deleted");
         }
         catch (Exception ex)
@@ -228,7 +247,8 @@ internal class uTProSimpleFormService(
         using var scope = scopeProvider.CreateScope(autoComplete: true);
         var db = scope.Database;
         bool Exists(string a) => db.SingleOrDefault<uTProSimpleFormDto>(
-            "SELECT * FROM uTProSimpleForm WHERE Alias = @0", a) != null;
+            scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
+                .Where<uTProSimpleFormDto>(x => x.Alias == a)) != null;
 
         if (!Exists(alias)) return alias;
 
@@ -253,7 +273,9 @@ internal class uTProSimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            var form = scope.Database.SingleOrDefault<uTProSimpleFormDto>("SELECT * FROM uTProSimpleForm WHERE Alias = @0", alias);
+            var form = scope.Database.SingleOrDefault<uTProSimpleFormDto>(
+                scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
+                    .Where<uTProSimpleFormDto>(x => x.Alias == alias));
             if (form == null) return (false, "Form not found");
             if (!form.IsEnabled) return (false, "Form is disabled");
 
@@ -315,18 +337,35 @@ internal class uTProSimpleFormService(
     {
         using var scope = scopeProvider.CreateScope(autoComplete: true);
         var db = scope.Database;
+        var syntax = scope.SqlContext.SqlSyntax;
+
         var sql = scope.SqlContext.Sql()
-            .Select("*").From("uTProSimpleFormEntry")
-            .Where("FormId = @0", formId);
+            .SelectAll().From<uTProSimpleFormEntryDto>()
+            .Where<uTProSimpleFormEntryDto>(x => x.FormId == formId);
 
         if (dateFrom.HasValue)
-            sql = sql.Where("CreatedUtc >= @0", dateFrom.Value.Date);
+        {
+            var from = dateFrom.Value.Date;
+            sql = sql.Where<uTProSimpleFormEntryDto>(x => x.CreatedUtc >= from);
+        }
         if (dateTo.HasValue)
-            sql = sql.Where("CreatedUtc < @0", dateTo.Value.Date.AddDays(1));
+        {
+            var toExclusive = dateTo.Value.Date.AddDays(1);
+            sql = sql.Where<uTProSimpleFormEntryDto>(x => x.CreatedUtc < toExclusive);
+        }
         if (!string.IsNullOrWhiteSpace(search))
-            sql = sql.Where("(DataJson LIKE @0 OR IpAddress LIKE @0)", $"%{search}%");
+        {
+            // Quote identifiers per provider and use a plain LIKE. We intentionally do NOT
+            // wrap the column in LOWER(): on databases upgraded from v1 the JSON column is
+            // still NTEXT, and SQL Server rejects LOWER(ntext). Plain LIKE works on ntext,
+            // text and nvarchar alike. SQL Server / SQLite stay case-insensitive via their
+            // default collation; PostgreSQL LIKE is case-sensitive.
+            var dataCol = syntax.GetQuotedColumnName("DataJson");
+            var ipCol = syntax.GetQuotedColumnName("IpAddress");
+            sql = sql.Where($"({dataCol} LIKE @0 OR {ipCol} LIKE @0)", $"%{search}%");
+        }
 
-        sql = sql.OrderByDescending("CreatedUtc");
+        sql = sql.OrderByDescending<uTProSimpleFormEntryDto>(x => x.CreatedUtc);
 
         var page = db.Page<uTProSimpleFormEntryDto>(skip / Math.Max(take, 1) + 1, take, sql);
         return new PagedResult<EntryViewModel>
@@ -341,7 +380,7 @@ internal class uTProSimpleFormService(
         try
         {
             using var scope = scopeProvider.CreateScope(autoComplete: true);
-            scope.Database.Execute("DELETE FROM uTProSimpleFormEntry WHERE Id = @0", id);
+            scope.Database.DeleteMany<uTProSimpleFormEntryDto>().Where(x => x.Id == id).Execute();
             return (true, "Deleted");
         }
         catch (Exception ex)

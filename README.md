@@ -4,6 +4,8 @@ A lightweight form builder — create and manage dynamic forms directly from the
 
 Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
 
+Database-agnostic: runs on **SQL Server**, **SQLite** and **PostgreSQL** (`v2.0.0+`).
+
 [![NuGet](https://img.shields.io/nuget/v/uTPro.Feature.SimpleFormBuilder.svg)](https://www.nuget.org/packages/uTPro.Feature.SimpleFormBuilder)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/uTPro.Feature.SimpleFormBuilder.svg)](https://www.nuget.org/packages/uTPro.Feature.SimpleFormBuilder)
 [![Umbraco Marketplace](https://img.shields.io/badge/Umbraco-Marketplace-blue)](https://marketplace.umbraco.com/package/utpro.feature.simpleformbuilder)
@@ -48,6 +50,16 @@ On first run it creates its tables and seeds a sample **Contact Us** form. Grant
 |---|---|---|
 | 16 | .NET 9 | `net9.0` |
 | 17 & 18 | .NET 10 | `net10.0` |
+
+---
+
+## Database support
+
+Runs on **SQL Server**, **SQLite** and **PostgreSQL**. All data access uses NPoco strongly-typed queries and provider-agnostic migrations (large JSON columns use `SpecialDbTypes.NVARCHARMAX`, which maps to `nvarchar(max)` on SQL Server and `text` on SQLite / PostgreSQL), so table/column identifiers and types are handled correctly on every database.
+
+For **PostgreSQL**, install the community provider [`Our.Umbraco.PostgreSql`](https://github.com/idseefeld/PostgreSqlForUmbraco), enable it in `Program.cs` with `.AddUmbracoPostgreSqlSupport()`, and set provider name `Npgsql2` in the connection string. The form builder then runs with full functionality — verified end-to-end (unattended install, migration, seed, form submit, and encrypted sensitive fields):
+
+![uTPro Simple Form Builder running on PostgreSQL](https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/postgresql.png)
 
 ---
 

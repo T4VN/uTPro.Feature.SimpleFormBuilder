@@ -10,25 +10,18 @@
     <!-- NuGet package metadata -->
     <PackageId>uTPro.Feature.SimpleFormBuilder</PackageId>
     <Title>uTPro Simple Form Builder for Umbraco (16, 17, 18)</Title>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Authors>T4VN</Authors>
     <Company>T4VN</Company>
-    <Description>Lightweight form builder for Umbraco 16, 17 and 18 - create, manage, and render dynamic forms from the backoffice. Supports 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language, and custom field extensibility.</Description>
-    <PackageTags>umbraco;umbraco-marketplace;form;form-builder;umbraco-plugin;cms</PackageTags>
+    <Description>Lightweight form builder for Umbraco 16, 17 and 18 - create, manage, and render dynamic forms from the backoffice. Supports 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language, and custom field extensibility. Runs on SQL Server, SQLite and PostgreSQL.</Description>
+    <PackageTags>umbraco;umbraco-marketplace;form;form-builder;umbraco-plugin;cms;postgresql;sqlite;sql-server</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</PackageProjectUrl>
     <RepositoryUrl>https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>v1.0.0: Initial release. Form builder for Umbraco 16, 17 and 18 (multi-target net9.0/net10.0) with groups/columns layout, 19 built-in field types + custom field extension point, client-side validation, sensitive-data encryption, import/export, copy/paste, Form Picker property editor, and public submit/render/entries APIs.</PackageReleaseNotes>
-
-    <!-- Source debugging: SourceLink + deterministic build + symbol package -->
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <PackageReleaseNotes>v2.0.0: Cross-database support (SQL Server, SQLite and PostgreSQL). Migration now creates JSON columns via SpecialDbTypes.NVARCHARMAX instead of the SQL Server-only NTEXT, and all data access uses NPoco strongly-typed queries so identifiers are quoted per provider. No schema change for existing databases. v1.0.0: Initial release. Form builder for Umbraco 16, 17 and 18 (multi-target net9.0/net10.0) with groups/columns layout, 19 built-in field types + custom field extension point, client-side validation, sensitive-data encryption, import/export, copy/paste, Form Picker property editor, and public submit/render/entries APIs.</PackageReleaseNotes>
 
     <!-- Serve wwwroot at the site root so App_Plugins/simple-form (backoffice manifest)
          and uTPro/simple-form (front-end assets) resolve at their declared absolute paths. -->
@@ -54,11 +47,6 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\icon.png" Pack="true" PackagePath="\" />
     <None Include="..\..\umbraco-marketplace.json" Pack="true" PackagePath="\" />
-  </ItemGroup>
-
-  <!-- SourceLink: maps PDBs to GitHub source for step-through debugging -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

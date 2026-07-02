@@ -2,7 +2,7 @@
   "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
   "Category": "Editor Tools",
   "Title": "uTPro Simple Form Builder",
-  "Description": "Lightweight form builder for Umbraco 16, 17 and 18 backoffice. Create, manage, and render dynamic forms with 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language support, custom field extensibility, entry storage, and public submit/render APIs. Render any form with a single ViewComponent call.",
+  "Description": "Lightweight form builder for Umbraco 16, 17 and 18 backoffice. Create, manage, and render dynamic forms with 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language support, custom field extensibility, entry storage, and public submit/render APIs. Render any form with a single ViewComponent call. Database-agnostic: runs on SQL Server, SQLite and PostgreSQL.",
   "AuthorDetails": {
     "Name": "T4VN",
     "Url": "https://t4vn.com",
@@ -53,6 +53,10 @@
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/import-export.png",
       "Caption": "Import / Export form definitions as JSON"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/postgresql.png",
+      "Caption": "Runs on PostgreSQL (and SQL Server / SQLite) — cross-database support"
     }
   ],
   "LicenseTypes": [
@@ -64,7 +68,9 @@
     "forms",
     "backoffice",
     "validation",
-    "dynamic-forms"
+    "dynamic-forms",
+    "postgresql",
+    "database"
   ],
   "LookingForContributors": true,
   "PackageType": "Package",
