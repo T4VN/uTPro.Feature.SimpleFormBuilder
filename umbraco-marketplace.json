@@ -9,10 +9,6 @@
     "ImageUrl": "https://github.com/t4vn.png",
     "SyncContributorsFromRepository": true
   },
-  "PackagesByAuthor": [
-    "uTPro.Feature.FileManager",
-    "uTPro.Feature.AuditLog"
-  ],
   "Screenshots": [
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-list.png",
