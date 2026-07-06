@@ -10,7 +10,7 @@
     <!-- NuGet package metadata -->
     <PackageId>uTPro.Feature.SimpleFormBuilder</PackageId>
     <Title>uTPro Simple Form Builder for Umbraco (16, 17, 18)</Title>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <Authors>T4VN</Authors>
     <Company>T4VN</Company>
     <Description>Lightweight form builder for Umbraco 16, 17 and 18 - create, manage, and render dynamic forms from the backoffice. Supports 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language, and custom field extensibility. Runs on SQL Server, SQLite and PostgreSQL.</Description>
@@ -21,7 +21,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>v2.0.0: Cross-database support (SQL Server, SQLite and PostgreSQL). Migration now creates JSON columns via SpecialDbTypes.NVARCHARMAX instead of the SQL Server-only NTEXT, and all data access uses NPoco strongly-typed queries so identifiers are quoted per provider. No schema change for existing databases. v1.0.0: Initial release. Form builder for Umbraco 16, 17 and 18 (multi-target net9.0/net10.0) with groups/columns layout, 19 built-in field types + custom field extension point, client-side validation, sensitive-data encryption, import/export, copy/paste, Form Picker property editor, and public submit/render/entries APIs.</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.0.1: Fix encode attribute, and renamed front-end CSS class prefix from "sf" to "uTProForm" (e.g. .sf -> .uTProForm, .sf-error -> .uTProForm-error) and JavaScript hooks window.__sfBeforeSubmit/__sfAfterSubmit to window.__uTProFormBeforeSubmit/__uTProFormAfterSubmit for clearer, collision-free naming. BREAKING: sites that target the old .sf* CSS selectors or use the old window.__sf* hooks must update accordingly. v2.0.0: Cross-database support (SQL Server, SQLite and PostgreSQL). Migration now creates JSON columns via SpecialDbTypes.NVARCHARMAX instead of the SQL Server-only NTEXT, and all data access uses NPoco strongly-typed queries so identifiers are quoted per provider. No schema change for existing databases. v1.0.0: Initial release. Form builder for Umbraco 16, 17 and 18 (multi-target net9.0/net10.0) with groups/columns layout, 19 built-in field types + custom field extension point, client-side validation, sensitive-data encryption, import/export, copy/paste, Form Picker property editor, and public submit/render/entries APIs.</PackageReleaseNotes>
 
     <!-- Serve wwwroot at the site root so App_Plugins/simple-form (backoffice manifest)
          and uTPro/simple-form (front-end assets) resolve at their declared absolute paths. -->

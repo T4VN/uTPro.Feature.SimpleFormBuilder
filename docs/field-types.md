@@ -90,11 +90,11 @@ Every field partial can use `FieldHelper` to avoid repetitive HTML:
 
 | Call | Renders |
 |---|---|
-| `h.FieldId` | Unique HTML id like `sf-contact-us-email` |
+| `h.FieldId` | Unique HTML id like `uTProForm-contact-us-email` |
 | `h.Name` | The field name for form submission |
 | `h.Label()` | `<label>` with a red asterisk if required |
 | `h.LabelNoFor()` | Label without `for` (for checkbox/radio groups) |
-| `h.Error()` | `<span class="sf-error">` for validation messages |
+| `h.Error()` | `<span class="uTProForm-error">` for validation messages |
 | `h.RequiredAttr()` | Outputs `required` or nothing |
 | `h.PatternAttr()` | Outputs `pattern="..."` or nothing |
 | `h.DataMsgAttr()` | Outputs `data-msg="..."` with auto-translated dictionary keys |
@@ -124,7 +124,7 @@ Wrap an Umbraco Dictionary key in double curly braces:
 }
 
 @h.Label()
-<div class="sf-star-rating">
+<div class="uTProForm-star-rating">
     @for (var i = 1; i <= int.Parse(max); i++)
     {
         <label>

@@ -5,13 +5,13 @@
 }
 
 @h.LabelNoFor()
-<div class="sf-options">
+<div class="uTProForm-options">
     @if (Model.Options != null)
     {
         @foreach (var opt in Model.Options)
         {
             var radioId = h.FieldId + "-" + opt.Value;
-            <label class="sf-option">
+            <label class="uTProForm-option">
                 <input type="radio"
                        id="@radioId"
                        name="@h.Name"

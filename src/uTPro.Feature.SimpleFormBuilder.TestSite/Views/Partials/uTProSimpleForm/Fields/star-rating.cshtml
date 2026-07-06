@@ -14,10 +14,10 @@
 }
 
 @h.Label()
-<div class="sf-star-rating">
+<div class="uTProForm-star-rating">
     @for (var i = 1; i <= max; i++)
     {
-        <label class="sf-star">
+        <label class="uTProForm-star">
             <input type="radio" name="@h.Name" value="@i"
                    @h.RequiredAttr() @h.DataMsgAttr() />
             <span>&#9733;</span>
@@ -27,11 +27,11 @@
 @h.Error()
 
 <style>
-    .sf-star-rating { display: inline-flex; flex-direction: row-reverse; gap: 4px; font-size: 1.6rem; }
-    .sf-star-rating .sf-star input { position: absolute; opacity: 0; width: 0; height: 0; }
-    .sf-star-rating .sf-star span { color: #ccc; cursor: pointer; transition: color .15s; }
-    .sf-star-rating .sf-star:hover span,
-    .sf-star-rating .sf-star:hover ~ .sf-star span,
-    .sf-star-rating .sf-star input:checked ~ span,
-    .sf-star-rating .sf-star:has(input:checked) span { color: #f5b301; }
+    .uTProForm-star-rating { display: inline-flex; flex-direction: row-reverse; gap: 4px; font-size: 1.6rem; }
+    .uTProForm-star-rating .uTProForm-star input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .uTProForm-star-rating .uTProForm-star span { color: #ccc; cursor: pointer; transition: color .15s; }
+    .uTProForm-star-rating .uTProForm-star:hover span,
+    .uTProForm-star-rating .uTProForm-star:hover ~ .uTProForm-star span,
+    .uTProForm-star-rating .uTProForm-star input:checked ~ span,
+    .uTProForm-star-rating .uTProForm-star:has(input:checked) span { color: #f5b301; }
 </style>

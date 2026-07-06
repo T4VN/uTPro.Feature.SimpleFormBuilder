@@ -8,7 +8,7 @@
     var linkText = h.Attr("linkText", "Terms & Conditions");
 }
 
-<label class="sf-option">
+<label class="uTProForm-option">
     <input type="checkbox"
            id="@h.FieldId"
            name="@h.Name"
@@ -20,6 +20,6 @@
     {
         <a href="@linkUrl" target="_blank" rel="noopener">@linkText</a>
     }
-    @if (Model.Required) { <span class="sf-required">*</span> }
+    @if (Model.Required) { <span class="uTProForm-required">*</span> }
 </label>
 @h.Error()

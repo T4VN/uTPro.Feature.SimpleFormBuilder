@@ -4,7 +4,7 @@
 @model uTPro.Feature.SimpleFormBuilder.Models.FormViewModel
 @inject ICultureDictionary CultureDictionary
 @{
-    var formId = "sf-" + Model.Alias;
+    var formId = "uTProForm-" + Model.Alias;
     var cssClass = ViewBag.FormCssClass as string ?? "";
     var btnText = ViewBag.SubmitBtnText as string ?? "SEND";
     var showReset = ViewBag.ShowReset as bool? ?? true;
@@ -18,7 +18,7 @@
     };
 }
 
-<form id="@formId" class="sf @cssClass" novalidate
+<form id="@formId" class="uTProForm @cssClass" novalidate
       data-alias="@Model.Alias"
       data-redirect="@(Model.RedirectUrl ?? "")"
       data-btn-text="@btnText">
@@ -26,10 +26,10 @@
 
     @foreach (var group in (Model.Groups ?? []).OrderBy(g => g.SortOrder))
     {
-        <fieldset class="sf-group @(group.CssClass ?? "")">
+        <fieldset class="uTProForm-group @(group.CssClass ?? "")">
             @if (!string.IsNullOrWhiteSpace(group.Name))
             {
-                <legend class="sf-group-title">@group.Name</legend>
+                <legend class="uTProForm-group-title">@group.Name</legend>
             }
             <div class="row">
                 @foreach (var col in group.Columns)
@@ -38,7 +38,7 @@
                         @foreach (var field in col.Fields.OrderBy(f => f.SortOrder))
                         {
                             if (field.IsHidden) { continue; }
-                            <div class="sf-group-field @(field.CssClass ?? "")">
+                            <div class="uTProForm-group-field @(field.CssClass ?? "")">
                                 @await Html.PartialAsync(
                                     FieldPartialResolver.Resolve(field.Type, ViewContext),
                                     field,
@@ -60,12 +60,12 @@
             }
         </ul>
     </div>
-    <div class="sf-message" style="display:none;"></div>
+    <div class="uTProForm-message" style="display:none;"></div>
 </form>
 
-@if (Context.Items["sf-assets-loaded"] is not true)
+@if (Context.Items["uTProForm-assets-loaded"] is not true)
 {
-    Context.Items["sf-assets-loaded"] = true;
+    Context.Items["uTProForm-assets-loaded"] = true;
     uTPro.Feature.SimpleFormBuilder.Helpers.uTProSimpleFormAssets.Resolve(
         Context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>());
     <link rel="stylesheet" href="@Url.Content("~" + uTPro.Feature.SimpleFormBuilder.Helpers.uTProSimpleFormAssets.Css)" />

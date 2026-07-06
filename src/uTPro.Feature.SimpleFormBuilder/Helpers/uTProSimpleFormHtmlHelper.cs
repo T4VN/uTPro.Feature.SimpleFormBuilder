@@ -27,7 +27,7 @@ public class FieldHelper
     public FieldHelper(FormFieldViewModel field, ViewDataDictionary viewData)
     {
         Field = field;
-        FormId = viewData["FormId"] as string ?? "sf";
+        FormId = viewData["FormId"] as string ?? "uTProForm";
         FieldId = FormId + "-" + field.Name;
         ResolvedValidationMessage = ResolveValidationMessage(field, viewData);
     }
@@ -38,7 +38,7 @@ public class FieldHelper
         var id = forId ?? FieldId;
         var html = $"<label for=\"{Encode(id)}\">{Encode(Field.Label)}";
         if (Field.Required)
-            html += " <span class=\"sf-required\">*</span>";
+            html += " <span class=\"uTProForm-required\">*</span>";
         html += "</label>";
         return new HtmlString(html);
     }
@@ -48,33 +48,34 @@ public class FieldHelper
     {
         var html = $"<label>{Encode(Field.Label)}";
         if (Field.Required)
-            html += " <span class=\"sf-required\">*</span>";
+            html += " <span class=\"uTProForm-required\">*</span>";
         html += "</label>";
         return new HtmlString(html);
     }
 
     /// <summary>Renders the error &lt;span&gt; for client-side validation.</summary>
     public IHtmlContent Error()
-        => new HtmlString($"<span class=\"sf-error\" data-for=\"{Encode(Name)}\"></span>");
+        => new HtmlString($"<span class=\"uTProForm-error\" data-for=\"{Encode(Name)}\"></span>");
 
-    /// <summary>Returns "required" attribute string or empty.</summary>
-    public string RequiredAttr() => Field.Required ? "required" : "";
+    /// <summary>Returns "required" attribute or empty.</summary>
+    public IHtmlContent RequiredAttr()
+        => new HtmlString(Field.Required ? "required" : "");
 
-    /// <summary>Returns pattern attribute string or empty.</summary>
-    public string PatternAttr()
-        => string.IsNullOrEmpty(Field.Validation) ? "" : $"pattern=\"{Encode(Field.Validation)}\"";
+    /// <summary>Returns pattern attribute or empty.</summary>
+    public IHtmlContent PatternAttr()
+        => new HtmlString(string.IsNullOrEmpty(Field.Validation) ? "" : $"pattern=\"{Encode(Field.Validation)}\"");
 
-    /// <summary>Returns data-msg attribute string.</summary>
-    public string DataMsgAttr()
-        => $"data-msg=\"{Encode(ResolvedValidationMessage)}\"";
+    /// <summary>Returns data-msg attribute.</summary>
+    public IHtmlContent DataMsgAttr()
+        => new HtmlString($"data-msg=\"{Encode(ResolvedValidationMessage)}\"");
 
-    /// <summary>Gets an attribute value from Field.Attributes with a fallback default.</summary>
+    /// <summary>Gets a raw attribute value from Field.Attributes with a fallback default.</summary>
     public string Attr(string key, string fallback = "")
         => Field.Attributes?.GetValueOrDefault(key) ?? fallback;
 
-    /// <summary>Returns a conditional HTML attribute string, or empty if value is blank.</summary>
-    public string OptionalAttr(string attrName, string value)
-        => string.IsNullOrEmpty(value) ? "" : $"{attrName}=\"{Encode(value)}\"";
+    /// <summary>Returns a conditional HTML attribute, or empty if value is blank.</summary>
+    public IHtmlContent OptionalAttr(string attrName, string value)
+        => new HtmlString(string.IsNullOrEmpty(value) ? "" : $"{attrName}=\"{Encode(value)}\"");
 
     private static string ResolveValidationMessage(FormFieldViewModel field, ViewDataDictionary viewData)
     {

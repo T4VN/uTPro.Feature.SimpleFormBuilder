@@ -54,7 +54,7 @@ Two front-end hooks for custom client-side logic:
 
 ```javascript
 // Runs before submission. Return false to cancel, or an object to merge extra data.
-window.__sfBeforeSubmit = async function (alias, data, formElement) {
+window.__uTProFormBeforeSubmit = async function (alias, data, formElement) {
     if (alias === 'contact-us') {
         data.source = 'homepage';
     }
@@ -62,7 +62,25 @@ window.__sfBeforeSubmit = async function (alias, data, formElement) {
 };
 
 // Runs after a successful submission.
-window.__sfAfterSubmit = function (alias, success, result) {
+window.__uTProFormAfterSubmit = function (alias, success, result) {
     console.log('Submitted:', alias, result.message);
 };
 ```
+
+## Styling / CSS classes
+
+The rendered form uses the `uTProForm` class prefix so its styles never collide with the host site. The bundled stylesheet (`~/uTPro/simple-form/css/simple-form.css`) targets these classes — override them in your own CSS to restyle the form:
+
+| Class | Element |
+|---|---|
+| `.uTProForm` | The `<form>` element |
+| `.uTProForm-group` / `.uTProForm-group-title` / `.uTProForm-group-field` | Fieldset group, its legend, and each field wrapper |
+| `.uTProForm-options` / `.uTProForm-option` | Checkbox / radio option list and each option |
+| `.uTProForm-required` | Required-field asterisk |
+| `.uTProForm-error` | Inline validation message |
+| `.uTProForm-message` + `.uTProForm-success` / `.uTProForm-fail` | Submit result banner |
+| `.uTProForm-content-block` | Raw HTML content block |
+| `.uTProForm-step` / `.uTProForm-step-title` / `.uTProForm-step-divider` | Step divider |
+| `.uTProForm-range-value` | Range slider value label |
+
+> **Upgrading from 2.0.0 or earlier:** the class prefix was `sf` (e.g. `.sf`, `.sf-error`) and the JS hooks were `window.__sfBeforeSubmit` / `window.__sfAfterSubmit`. Update any custom CSS or hooks to the `uTProForm` names above.

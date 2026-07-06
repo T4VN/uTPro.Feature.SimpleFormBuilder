@@ -6,7 +6,7 @@
  *   data-btn-text    — submit button text for reset after submit (optional)
  */
 (function () {
-    document.querySelectorAll('form.sf').forEach(function (form) {
+    document.querySelectorAll('form.uTProForm').forEach(function (form) {
         var alias = form.dataset.alias;
         if (!alias) return;
 
@@ -15,9 +15,9 @@
 
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
-            var msgEl = form.querySelector('.sf-message');
+            var msgEl = form.querySelector('.uTProForm-message');
             var btn = form.querySelector('[type="submit"]');
-            form.querySelectorAll('.sf-error').forEach(function (el) { el.textContent = ''; });
+            form.querySelectorAll('.uTProForm-error').forEach(function (el) { el.textContent = ''; });
             if (msgEl) msgEl.style.display = 'none';
 
             var data = {};
@@ -36,21 +36,21 @@
                     data[name] = input.value;
                 }
                 if (input.hasAttribute('required') && !data[name]) {
-                    var errEl = form.querySelector('.sf-error[data-for="' + name + '"]');
+                    var errEl = form.querySelector('.uTProForm-error[data-for="' + name + '"]');
                     if (errEl) errEl.textContent = input.dataset.msg || 'Required';
                     valid = false;
                 }
                 if (input.pattern && data[name]) {
                     if (!new RegExp(input.pattern).test(data[name])) {
-                        var errEl2 = form.querySelector('.sf-error[data-for="' + name + '"]');
+                        var errEl2 = form.querySelector('.uTProForm-error[data-for="' + name + '"]');
                         if (errEl2) errEl2.textContent = input.dataset.msg || 'Invalid';
                         valid = false;
                     }
                 }
             });
 
-            if (window.__sfBeforeSubmit) {
-                var hookResult = await window.__sfBeforeSubmit(alias, data, form);
+            if (window.__uTProFormBeforeSubmit) {
+                var hookResult = await window.__uTProFormBeforeSubmit(alias, data, form);
                 if (hookResult === false) return;
                 if (typeof hookResult === 'object') Object.assign(data, hookResult);
             }
@@ -67,22 +67,22 @@
                 if (resp.ok) {
                     if (redirectUrl) { window.location.href = redirectUrl; return; }
                     if (msgEl) {
-                        msgEl.className = 'sf-message sf-success';
+                        msgEl.className = 'uTProForm-message uTProForm-success';
                         msgEl.textContent = result.message || 'Thank you!';
                         msgEl.style.display = 'block';
                     }
                     form.reset();
-                    if (window.__sfAfterSubmit) window.__sfAfterSubmit(alias, true, result);
+                    if (window.__uTProFormAfterSubmit) window.__uTProFormAfterSubmit(alias, true, result);
                 } else {
                     if (msgEl) {
-                        msgEl.className = 'sf-message sf-fail';
+                        msgEl.className = 'uTProForm-message uTProForm-fail';
                         msgEl.textContent = result.message || 'Error';
                         msgEl.style.display = 'block';
                     }
                 }
             } catch (err) {
                 if (msgEl) {
-                    msgEl.className = 'sf-message sf-fail';
+                    msgEl.className = 'uTProForm-message uTProForm-fail';
                     msgEl.textContent = 'Network error';
                     msgEl.style.display = 'block';
                 }

@@ -7,11 +7,11 @@
 @if (Model.Options != null && Model.Options.Any())
 {
     @h.LabelNoFor()
-    <div class="sf-options">
+    <div class="uTProForm-options">
         @foreach (var opt in Model.Options)
         {
             var cbId = h.FieldId + "-" + opt.Value;
-            <label class="sf-option">
+            <label class="uTProForm-option">
                 <input type="checkbox" id="@cbId" name="@h.Name" value="@opt.Value" />
                 @opt.Text
             </label>
@@ -20,7 +20,7 @@
 }
 else
 {
-    <label class="sf-option">
+    <label class="uTProForm-option">
         <input type="checkbox" id="@h.FieldId" name="@h.Name" value="true" />
         @Model.Label
     </label>
