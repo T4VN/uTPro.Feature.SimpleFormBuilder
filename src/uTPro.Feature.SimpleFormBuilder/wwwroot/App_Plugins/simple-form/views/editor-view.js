@@ -28,7 +28,7 @@ export function renderEditor(host) {
         ` : nothing}
         ${!f.id ? _renderGeneralSettings(host, f) : nothing}
         <div class="section-header">
-            <h3>Groups</h3>
+            <h3>Groups ${_renderPreviewLangPicker(host)}</h3>
             <div class="header-actions">
                 ${host._clipPeek('group') ? html`<uui-button look="outline" color="warning" compact @click=${() => host._pasteGroup()}><uui-icon name="icon-paste-in"></uui-icon> Paste Group</uui-button>` : nothing}
                 <uui-button look="primary" compact @click=${() => host._addGroup()}>+ Add Group</uui-button>
@@ -38,6 +38,22 @@ export function renderEditor(host) {
         ${f.groups.map((group, gIdx) => _renderGroupCard(host, group, gIdx))}
         ${host._typePickerIdx >= 0 ? _renderTypePicker(host) : nothing}
         ${host._fieldSettingsLoc ? _renderFieldSettingsDialog(host) : nothing}`;
+}
+
+// ── Preview-language picker ──
+// Lets the editor preview {{ Key }} tokens translated into a chosen language.
+// The default (empty) option keeps the raw {{ }} syntax visible for editing.
+function _renderPreviewLangPicker(host) {
+    const langs = host._languages || [];
+    if (langs.length === 0) return nothing;
+    return html`
+        <label class="preview-lang" title="Preview dictionary translations in this language">
+            <uui-icon name="icon-globe"></uui-icon>
+            <select class="move-to-select" @change=${(e) => { host._previewLang = e.target.value; host.requestUpdate(); }}>
+                <option value="" ?selected=${!host._previewLang}>Show syntax {{ }}</option>
+                ${langs.map(l => html`<option value="${l.isoCode}" ?selected=${host._previewLang === l.isoCode}>${l.name}</option>`)}
+            </select>
+        </label>`;
 }
 
 // ── Group card ──
@@ -130,13 +146,13 @@ function _renderColumnCard(host, col, gIdx, cIdx, totalCols) {
 // ── Compact field card (summary only) ──
 function _renderFieldCompact(host, field, fIdx, loc) {
     const typeLabel = host._fieldTypes.find(ft => ft.type === field.type)?.label || field.type;
-    const label = field.label || field.name || '(no label)';
+    const label = host._localizePreview(field.label || field.name || '(no label)');
     const totalFields = host._editForm.groups[loc.gIdx].columns[loc.cIdx].fields.length;
 
     return html`
         <div class="fc${field.isHidden ? ' fc-hidden' : ''}"
             draggable="true"
-            @dblclick=${() => { host._fieldSettingsLoc = { ...loc, fIdx }; host.requestUpdate(); }}
+            @dblclick=${() => host._openFieldSettings(loc, fIdx)}
             @dragstart=${(e) => { e.dataTransfer.setData('application/field-drag', JSON.stringify({ ...loc, fIdx })); e.dataTransfer.effectAllowed = 'move'; e.currentTarget.classList.add('fc-dragging'); }}
             @dragend=${(e) => { e.currentTarget.classList.remove('fc-dragging'); }}
             @dragover=${(e) => { if (e.dataTransfer.types.includes('application/field-drag')) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('fc-drag-over'); } }}
@@ -164,7 +180,7 @@ function _renderFieldCompact(host, field, fIdx, loc) {
                 <button class="fc-btn" title="Copy field" @click=${() => host._copyField(loc.gIdx, loc.cIdx, fIdx)}><uui-icon name="icon-documents"></uui-icon></button>
                 <button class="fc-btn" title="Move up" ?disabled=${fIdx === 0} @click=${() => host._moveFieldInColumn(loc.gIdx, loc.cIdx, fIdx, -1)}><uui-icon name="icon-navigation-up"></uui-icon></button>
                 <button class="fc-btn" title="Move down" ?disabled=${fIdx === totalFields - 1} @click=${() => host._moveFieldInColumn(loc.gIdx, loc.cIdx, fIdx, 1)}><uui-icon name="icon-navigation-down"></uui-icon></button>
-                <button class="fc-btn" title="Settings" @click=${() => { host._fieldSettingsLoc = { ...loc, fIdx }; host.requestUpdate(); }}><uui-icon name="icon-settings"></uui-icon></button>
+                <button class="fc-btn" title="Settings" @click=${() => host._openFieldSettings(loc, fIdx)}><uui-icon name="icon-settings"></uui-icon></button>
             </div>
         </div>`;
 }
@@ -179,13 +195,14 @@ function _renderFieldSettingsDialog(host) {
     const needsOptions = ['select', 'radio', 'checkbox'].includes(field.type);
     const currentTypeLabel = host._fieldTypes.find(ft => ft.type === field.type)?.label || field.type;
     const updateFn = (key, val) => { host._updateFieldInColumn(loc.gIdx, loc.cIdx, loc.fIdx, key, val); };
-    const close = () => { host._fieldSettingsLoc = null; host.requestUpdate(); };
+    const save = () => host._closeFieldSettings();
+    const cancel = () => host._cancelFieldSettings();
 
     return html`
-        <div class="overlay" @click=${(e) => { if (e.target === e.currentTarget) close(); }}>
+        <div class="overlay" @click=${(e) => { if (e.target === e.currentTarget) cancel(); }}>
             <div class="field-dialog">
                 <div class="field-dialog-header">
-                    <h3>Field Settings — ${field.label || field.name || '(untitled)'}</h3>
+                    <h3>Field Settings — ${host._localizePreview(field.label || field.name || '(untitled)')}</h3>
                 </div>
                 <div class="field-dialog-body">
                     <div class="fd-grid">
@@ -250,11 +267,14 @@ function _renderFieldSettingsDialog(host) {
 
                 </div>
                 <div class="field-dialog-footer">
-                    <uui-button look="outline" color="danger" @click=${() => { if (confirm('Remove this field?')) { host._removeFieldFromColumn(loc.gIdx, loc.cIdx, loc.fIdx); close(); } }}>
+                    <uui-button look="outline" color="danger" @click=${() => { if (confirm('Remove this field?')) { host._removeFieldFromColumn(loc.gIdx, loc.cIdx, loc.fIdx); host._closeFieldSettings(); } }}>
                         <uui-icon name="icon-trash"></uui-icon> Delete
                     </uui-button>
-                    <uui-button class="dlg-close" look="secondary" @click=${close}>
-                        <uui-icon name="icon-delete"></uui-icon> Close
+                    <uui-button class="dlg-close" look="secondary" @click=${cancel}>
+                        <uui-icon name="icon-delete"></uui-icon> Cancel
+                    </uui-button>
+                    <uui-button class="dlg-close" look="primary" color="positive" @click=${save}>
+                        <uui-icon name="icon-check"></uui-icon> Save
                     </uui-button>
                 </div>
             </div>
@@ -279,7 +299,7 @@ function _renderMoveToInDialog(host, loc) {
             const val = e.target.value; if (!val) return;
             const [tg, tc] = val.split(',').map(Number);
             host._moveFieldTo({ gIdx: loc.gIdx, cIdx: loc.cIdx, fIdx: loc.fIdx }, { gIdx: tg, cIdx: tc });
-            host._fieldSettingsLoc = null; host.requestUpdate();
+            host._closeFieldSettings();
         }}>
                 <option value="">Select destination…</option>
                 ${destinations.map(d => html`<option value="${d.gIdx},${d.cIdx}">→ ${d.label}</option>`)}

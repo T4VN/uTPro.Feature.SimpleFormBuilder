@@ -6,12 +6,12 @@
 
 @h.Label()
 <select id="@h.FieldId" name="@h.Name" @h.RequiredAttr()>
-    <option value="">@(Model.Placeholder ?? "-- Select --")</option>
+    <option value="">@(!string.IsNullOrEmpty(h.Placeholder) ? h.Placeholder : "-- Select --")</option>
     @if (Model.Options != null)
     {
         @foreach (var opt in Model.Options)
         {
-            <option value="@opt.Value" selected="@(opt.Value == Model.DefaultValue)">@opt.Text</option>
+            <option value="@opt.Value" selected="@(opt.Value == Model.DefaultValue)">@h.L(opt.Text)</option>
         }
     }
 </select>

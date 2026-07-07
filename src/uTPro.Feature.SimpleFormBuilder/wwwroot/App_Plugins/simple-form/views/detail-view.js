@@ -26,12 +26,19 @@ export function renderDetail(host) {
                         <span class="detail-label">IP Address</span>
                         <span class="detail-value">${s.ipAddress || 'N/A'}</span>
                     </div>
-                    ${entries.map(([k, v]) => html`
+                    ${entries.map(([k, v]) => {
+                        const fileName = host._fileValueName(v);
+                        return html`
                         <div class="detail-row">
                             <span class="detail-label">${k}</span>
-                            <span class="detail-value">${v || ''}</span>
-                        </div>
-                    `)}
+                            <span class="detail-value">${fileName
+                                ? html`<uui-button look="secondary" compact
+                                        @click=${() => host._downloadEntryFile(s.id, k, fileName)}>
+                                        <uui-icon name="icon-download-alt"></uui-icon> ${fileName}
+                                    </uui-button>`
+                                : (v || '')}</span>
+                        </div>`;
+                    })}
                 </div>
                 <div class="detail-footer">
                     ${isAdmin ? html`

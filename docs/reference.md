@@ -7,8 +7,8 @@
 ```
 uTPro.Feature.SimpleFormBuilder/
 ├── Controllers/
-│   ├── uTProSimpleFormApiController.cs      # Backoffice API (CRUD, entries, field types, permissions)
-│   └── uTProSimpleFormSubmitController.cs   # Public API (submit, render, entries)
+│   ├── uTProSimpleFormApiController.cs      # Backoffice API (CRUD, entries, field types, permissions, entry-file download, ZIP export)
+│   └── uTProSimpleFormSubmitController.cs   # Public API (submit [JSON or multipart w/ files], render, entries)
 ├── Helpers/
 │   ├── FieldPartialResolver.cs              # Finds the right partial for each field type
 │   ├── uTProSimpleFormAssets.cs             # Resolves front-end CSS/JS paths
@@ -52,6 +52,19 @@ The package serves its `wwwroot` at the site root (`StaticWebAssetBasePath = /`)
 - Backoffice assets resolve at `/App_Plugins/simple-form/...` (where Umbraco discovers the package manifest)
 - Front-end assets resolve at `/uTPro/simple-form/...`
 
+## Uploaded files storage (`v2.1.0+`)
+
+Files submitted through `file` fields are **not** part of `wwwroot`. They are written to
+the app content root under:
+
+```
+App_Data/umbraco/Data/uTProSimpleFormUploads/{formAlias}/{yyyyMM}/{guid}{ext}
+```
+
+This folder is never served statically. Files are only retrievable via the authenticated
+`entry-file` endpoint (or bundled by the ZIP export), and are cleaned up when their entry
+or form is deleted. See [Security & Permissions](security.md) for the full model.
+
 ## Database Tables
 
 Created automatically on first startup.
@@ -83,7 +96,7 @@ Created automatically on first startup.
 |---|---|---|
 | Id | int (PK) | Auto-increment |
 | FormId | int | Links to `uTProSimpleForm` |
-| DataJson | ntext | Submitted data (sensitive fields encrypted) |
+| DataJson | ntext | Submitted data (sensitive fields encrypted; file fields store a `utpro-file:` reference, not the bytes) |
 | IpAddress | nvarchar(100) | Submitter's IP |
 | UserAgent | nvarchar(500) | Submitter's browser |
 | CreatedUtc | datetime | Submission timestamp |

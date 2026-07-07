@@ -35,7 +35,7 @@
 <input type="@Model.Type"
        id="@h.FieldId"
        name="@h.Name"
-       placeholder="@Model.Placeholder"
+       placeholder="@h.Placeholder"
        value="@Model.DefaultValue"
        @h.RequiredAttr()
        @h.PatternAttr()
@@ -43,5 +43,6 @@
        @h.OptionalAttr("max", h.Attr("max"))
        @h.OptionalAttr("step", h.Attr("step"))
        @h.OptionalAttr("accept", h.Attr("accept"))
+       @h.OptionalAttr("data-max-size", h.Attr("maxSize"))
        @h.DataMsgAttr() />
 @h.Error()

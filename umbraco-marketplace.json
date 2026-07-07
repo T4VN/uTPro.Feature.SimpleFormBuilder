@@ -2,7 +2,7 @@
   "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
   "Category": "Editor Tools",
   "Title": "uTPro Simple Form Builder",
-  "Description": "Lightweight form builder for Umbraco 16, 17 and 18 backoffice. Create, manage, and render dynamic forms with 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language support, custom field extensibility, entry storage, and public submit/render APIs. Render any form with a single ViewComponent call. Database-agnostic: runs on SQL Server, SQLite and PostgreSQL.",
+  "Description": "Lightweight form builder for Umbraco 16, 17 and 18 backoffice. Create, manage, and render dynamic forms with 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language support, custom field extensibility, entry storage, secure file uploads (stored outside wwwroot, authenticated download), entry export as CSV or ZIP (data + uploaded files), and public submit/render APIs. Render any form with a single ViewComponent call. Database-agnostic: runs on SQL Server, SQLite and PostgreSQL.",
   "AuthorDetails": {
     "Name": "T4VN",
     "Url": "https://t4vn.com",
@@ -32,7 +32,7 @@
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/entries.png",
-      "Caption": "Entries with search, date-range filters, paging and CSV export"
+      "Caption": "Entries with search, date-range filters, paging and export as CSV or ZIP (data + uploaded files)"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/sensitive-data.png",

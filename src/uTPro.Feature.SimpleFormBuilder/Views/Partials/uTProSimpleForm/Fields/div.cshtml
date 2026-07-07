@@ -1,10 +1,14 @@
 @* Content Block — renders raw HTML from DefaultValue.
-   Use for headings, paragraphs, instructions, or any custom HTML within the form. *@
+   Use for headings, paragraphs, instructions, or any custom HTML within the form.
+   Any {{ DictionaryKey }} tokens inside the HTML are localized for the current culture. *@
+@using uTPro.Feature.SimpleFormBuilder.Helpers
+@using Umbraco.Cms.Core.Dictionary
 @model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
 
 @if (!string.IsNullOrEmpty(Model.DefaultValue))
 {
+    var content = FieldHelper.Localize(Model.DefaultValue, ViewData["CultureDictionary"] as ICultureDictionary);
     <div class="uTProForm-content-block @(Model.CssClass ?? "")">
-        @Html.Raw(Model.DefaultValue)
+        @Html.Raw(content)
     </div>
 }

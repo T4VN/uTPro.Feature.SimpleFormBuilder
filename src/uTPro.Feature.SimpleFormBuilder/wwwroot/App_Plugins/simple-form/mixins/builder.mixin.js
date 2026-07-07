@@ -124,6 +124,34 @@ export const BuilderMixin = (Base) => class extends Base {
         this.requestUpdate();
     }
 
+    // ── Field settings dialog open/close ──
+    // Snapshot the field on open so Cancel can revert any edits made inside the dialog.
+    _openFieldSettings(loc, fIdx) {
+        const field = this._editForm?.groups?.[loc.gIdx]?.columns?.[loc.cIdx]?.fields?.[fIdx];
+        this._fieldSettingsSnapshot = field ? JSON.parse(JSON.stringify(field)) : null;
+        this._fieldSettingsLoc = { ...loc, fIdx };
+        this.requestUpdate();
+    }
+
+    // Keep edits (Save button) — snapshot is discarded.
+    _closeFieldSettings() {
+        this._fieldSettingsSnapshot = null;
+        this._fieldSettingsLoc = null;
+        this.requestUpdate();
+    }
+
+    // Revert edits made in the dialog by restoring the snapshot (Cancel button).
+    _cancelFieldSettings() {
+        const loc = this._fieldSettingsLoc;
+        if (loc && this._fieldSettingsSnapshot) {
+            const col = this._editForm?.groups?.[loc.gIdx]?.columns?.[loc.cIdx];
+            if (col?.fields?.[loc.fIdx]) col.fields[loc.fIdx] = this._fieldSettingsSnapshot;
+        }
+        this._fieldSettingsSnapshot = null;
+        this._fieldSettingsLoc = null;
+        this.requestUpdate();
+    }
+
     _addOptionInColumn(gIdx, cIdx, fIdx) {
         if (!this._editForm.groups[gIdx].columns[cIdx].fields[fIdx].options)
             this._editForm.groups[gIdx].columns[cIdx].fields[fIdx].options = [];

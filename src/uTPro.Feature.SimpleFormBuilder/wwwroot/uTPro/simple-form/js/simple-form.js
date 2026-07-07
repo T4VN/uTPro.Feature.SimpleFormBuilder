@@ -12,6 +12,8 @@
 
         var redirectUrl = form.dataset.redirect || '';
         var btnText = form.dataset.btnText || 'Submit';
+        // Server-rendered (already localized for the page culture) success message.
+        var successMsg = form.dataset.successMsg || '';
 
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -22,6 +24,7 @@
 
             var data = {};
             var valid = true;
+            var fileInputs = [];
             var inputs = form.querySelectorAll('[name]');
             inputs.forEach(function (input) {
                 if (input.name === '__alias') return;
@@ -32,7 +35,25 @@
                 } else if (input.type === 'radio') {
                     var sel = form.querySelector('input[name="' + name + '"]:checked');
                     if (sel) data[name] = sel.value;
-                } else if (input.type !== 'file') {
+                } else if (input.type === 'file') {
+                    // Files are uploaded separately (below); only their reference goes into `data`.
+                    var file = input.files && input.files[0];
+                    if (file) {
+                        var maxMb = parseFloat(input.dataset.maxSize || '');
+                        if (!isNaN(maxMb) && maxMb > 0 && file.size > maxMb * 1024 * 1024) {
+                            var errElF = form.querySelector('.uTProForm-error[data-for="' + name + '"]');
+                            if (errElF) errElF.textContent = 'File exceeds ' + maxMb + ' MB';
+                            valid = false;
+                        } else {
+                            fileInputs.push({ name: name, file: file });
+                        }
+                    } else if (input.hasAttribute('required')) {
+                        var errElR = form.querySelector('.uTProForm-error[data-for="' + name + '"]');
+                        if (errElR) errElR.textContent = input.dataset.msg || 'Required';
+                        valid = false;
+                    }
+                    return; // file inputs skip the generic required/pattern checks below
+                } else {
                     data[name] = input.value;
                 }
                 if (input.hasAttribute('required') && !data[name]) {
@@ -49,26 +70,34 @@
                 }
             });
 
-            if (window.__uTProFormBeforeSubmit) {
-                var hookResult = await window.__uTProFormBeforeSubmit(alias, data, form);
-                if (hookResult === false) return;
-                if (typeof hookResult === 'object') Object.assign(data, hookResult);
-            }
-
             if (!valid) return;
             if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+            if (window.__uTProFormBeforeSubmit) {
+                var hookResult = await window.__uTProFormBeforeSubmit(alias, data, form);
+                if (hookResult === false) { if (btn) { btn.disabled = false; btn.textContent = btnText; } return; }
+                if (typeof hookResult === 'object') Object.assign(data, hookResult);
+            }
             try {
+                // Data + any files go up together in a single multipart request. Files are
+                // only persisted server-side once the submission validates and is stored,
+                // so an abandoned/failed submit never leaves orphaned uploads.
+                var body = new FormData();
+                body.append('alias', alias);
+                body.append('data', JSON.stringify(data));
+                for (var i = 0; i < fileInputs.length; i++) {
+                    body.append('file:' + fileInputs[i].name, fileInputs[i].file);
+                }
                 var resp = await fetch('/api/utpro/simple-form/submit', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ alias: alias, data: data })
+                    body: body
                 });
                 var result = await resp.json();
                 if (resp.ok) {
                     if (redirectUrl) { window.location.href = redirectUrl; return; }
                     if (msgEl) {
                         msgEl.className = 'uTProForm-message uTProForm-success';
-                        msgEl.textContent = result.message || 'Thank you!';
+                        msgEl.textContent = successMsg || result.message || 'Thank you!';
                         msgEl.style.display = 'block';
                     }
                     form.reset();

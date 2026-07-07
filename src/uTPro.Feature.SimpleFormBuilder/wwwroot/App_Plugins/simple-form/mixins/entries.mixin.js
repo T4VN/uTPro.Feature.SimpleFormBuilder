@@ -125,7 +125,11 @@ export const EntriesMixin = (Base) => class extends Base {
         const rows = this._entries.map(s => {
             const date = new Date(s.createdUtc).toLocaleString();
             const ip = s.ipAddress || '';
-            const fields = allKeys.map(k => '"' + (s.data?.[k] || '').replace(/"/g, '""') + '"');
+            const fields = allKeys.map(k => {
+                const raw = s.data?.[k] || '';
+                const fileName = this._fileValueName(raw);
+                return '"' + (fileName || raw).replace(/"/g, '""') + '"';
+            });
             return ['"' + date + '"', '"' + ip + '"', ...fields].join(',');
         });
         const csv = headers.join(',') + '\n' + rows.join('\n');

@@ -32,6 +32,17 @@ Ships with 19 field types out of the box:
 
 Types without a dedicated partial fall back to `_Default.cshtml`, which renders a standard `<input>`.
 
+### File upload field (`v2.1.0+`)
+
+The `file` type renders a file input with two optional settings in the field editor:
+
+| Setting | Attribute | Effect |
+|---|---|---|
+| **Accept** | `accept` | Comma-separated allowed extensions (e.g. `.pdf,.jpg`). Enforced client-side and server-side. |
+| **Max MB** | `maxSize` | Maximum file size in megabytes. Enforced client-side and server-side. |
+
+Uploaded files are sent together with the submission in a single request and are only persisted once the entry validates and is stored — they are saved **outside `wwwroot`** and never served statically. In the backoffice entries list/detail the field shows a download button; the file streams through an authenticated endpoint. If the file field is also marked **Sensitive Data**, it is masked and blocked from download for users without the Sensitive Data permission. See [Public APIs](public-apis.md) and [Security & Permissions](security.md) for details.
+
 ## Adding a Custom Field Type
 
 It takes two steps — **no package edits required**.

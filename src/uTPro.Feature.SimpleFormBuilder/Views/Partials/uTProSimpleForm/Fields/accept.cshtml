@@ -3,9 +3,9 @@
 @model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
 @{
     var h = new FieldHelper(Model, ViewData);
-    var text = h.Attr("text", "I agree to the");
+    var text = h.AttrLocalized("text", "I agree to the");
     var linkUrl = h.Attr("linkUrl");
-    var linkText = h.Attr("linkText", "Terms & Conditions");
+    var linkText = h.AttrLocalized("linkText", "Terms & Conditions");
 }
 
 <label class="uTProForm-option">

@@ -3,7 +3,7 @@
 @model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel
 @{
     var h = new FieldHelper(Model, ViewData);
-    var title = h.Attr("title", Model.Label ?? "Next Step");
+    var title = h.L(h.Attr("title", Model.Label ?? "Next Step"));
 }
 
 <div class="uTProForm-step">

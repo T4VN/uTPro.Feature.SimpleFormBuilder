@@ -64,7 +64,10 @@ export class UtproSimpleFormDashboard extends DashboardBase {
         _typePickerGroupIdx: { type: Number, state: true },
         _typePickerColIdx: { type: Number, state: true },
         _fieldSettingsLoc: { type: Object, state: true },
+        _fieldSettingsSnapshot: { type: Object, state: true },
         _clip: { state: true },
+        _languages: { type: Array, state: true },
+        _previewLang: { type: String, state: true },
     };
 
     static styles = dashboardStyles;
@@ -98,8 +101,12 @@ export class UtproSimpleFormDashboard extends DashboardBase {
         this._typePickerGroupIdx = -1;
         this._typePickerColIdx = -1;
         this._fieldSettingsLoc = null;
+        this._fieldSettingsSnapshot = null;
         this._editFormSnapshot = '';
         this._clip = null;
+        this._languages = [];
+        this._previewLang = '';   // '' → show raw {{ }} syntax
+        this._dictMap = {};       // { key: { isoLower: value } }
         this.consumeContext(UMB_AUTH_CONTEXT, (ctx) => { this.#authContext = ctx; });
         this.consumeContext(UMB_NOTIFICATION_CONTEXT, (ctx) => { this.#notificationContext = ctx; });
     }
@@ -160,6 +167,7 @@ export class UtproSimpleFormDashboard extends DashboardBase {
         await this._loadPermissions();
         await this._loadForms();
         await this._loadFieldTypes();
+        await this._loadDictionary();
         await this._restoreFromUrl();
         this._refreshClip();
     }
@@ -228,6 +236,80 @@ export class UtproSimpleFormDashboard extends DashboardBase {
         this.#notificationContext?.peek(err ? 'danger' : 'positive', { data: { message: m } });
     }
 
+    // Downloads an uploaded file for an entry field through the authenticated
+    // backoffice endpoint (a plain <a href> can't carry the bearer token).
+    async _downloadEntryFile(entryId, fieldName, fileName) {
+        try {
+            const config = this.#authContext?.getOpenApiConfiguration();
+            const headers = {};
+            if (config?.token) {
+                const t = await config.token();
+                if (t) headers['Authorization'] = 'Bearer ' + t;
+            }
+            const url = API + '/entry-file?entryId=' + encodeURIComponent(entryId)
+                + '&fieldName=' + encodeURIComponent(fieldName);
+            const resp = await fetch(url, {
+                headers,
+                credentials: config?.credentials || 'same-origin'
+            });
+            if (!resp.ok) throw new Error('Download failed');
+            const blob = await resp.blob();
+            const objUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = objUrl;
+            a.download = fileName || 'download';
+            a.click();
+            URL.revokeObjectURL(objUrl);
+        } catch (e) { this._msg(e.message || 'Download failed', true); }
+    }
+
+    // Closes the entries "Export" dropdown after a choice is made.
+    _closeExportMenu() {
+        this.renderRoot?.querySelector('#utpro-entries-export-menu')?.hidePopover?.();
+    }
+
+    // Exports all matching entries as a ZIP (one folder per entry: its CSV row + uploaded
+    // files), streamed through the authenticated backoffice endpoint.
+    async _exportEntriesZip() {
+        try {
+            const config = this.#authContext?.getOpenApiConfiguration();
+            const headers = { 'Content-Type': 'application/json' };
+            if (config?.token) {
+                const t = await config.token();
+                if (t) headers['Authorization'] = 'Bearer ' + t;
+            }
+            const body = { formId: this._viewFormId };
+            if (this._search) body.search = this._search;
+            if (this._dateFrom) body.dateFrom = this._dateFrom;
+            if (this._dateTo) body.dateTo = this._dateTo;
+
+            const resp = await fetch(API + '/export-entries-zip', {
+                method: 'POST',
+                headers,
+                credentials: config?.credentials || 'same-origin',
+                body: JSON.stringify(body)
+            });
+            if (!resp.ok) throw new Error('Export failed');
+            const blob = await resp.blob();
+            const objUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const formName = this._forms.find(f => f.id === this._viewFormId)?.alias || 'form';
+            a.href = objUrl;
+            a.download = formName + '-entries.zip';
+            a.click();
+            URL.revokeObjectURL(objUrl);
+        } catch (e) { this._msg(e.message || 'Export failed', true); }
+    }
+
+    // Parses a stored "utpro-file:{name}|{token}" value into its display name,
+    // or returns null when the value is not a file reference.
+    _fileValueName(value) {
+        if (typeof value !== 'string' || !value.startsWith('utpro-file:')) return null;
+        const body = value.slice('utpro-file:'.length);
+        const sep = body.lastIndexOf('|');
+        return sep < 0 ? body : body.slice(0, sep);
+    }
+
     // ── Data loading ──
     async _loadPermissions() {
         try {
@@ -247,6 +329,41 @@ export class UtproSimpleFormDashboard extends DashboardBase {
 
     async _loadFieldTypes() {
         try { this._fieldTypes = await this._api(API + '/field-types'); } catch {}
+    }
+
+    // Load site languages + dictionary translations for the builder's live preview.
+    async _loadDictionary() {
+        try {
+            const res = await this._api(API + '/dictionary');
+            this._languages = res?.languages || [];
+            const map = {};
+            for (const item of (res?.items || [])) {
+                const t = {};
+                for (const [iso, val] of Object.entries(item.translations || {})) {
+                    t[String(iso).toLowerCase()] = val;
+                }
+                map[item.key] = t;
+            }
+            this._dictMap = map;
+        } catch {
+            this._languages = [];
+            this._dictMap = {};
+        }
+    }
+
+    /**
+     * Resolve {{ Key }} tokens in a preview string using the currently selected
+     * preview language. When no language is selected the raw text (including the
+     * tokens) is returned unchanged. Unknown keys / missing translations keep the
+     * original token so nothing silently disappears.
+     */
+    _localizePreview(text) {
+        if (!text || !this._previewLang || text.indexOf('{{') < 0) return text;
+        const iso = this._previewLang.toLowerCase();
+        return text.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (m, key) => {
+            const val = this._dictMap?.[key.trim()]?.[iso];
+            return (val === undefined || val === null || val === '') ? m : val;
+        });
     }
 
     // ── Render ──

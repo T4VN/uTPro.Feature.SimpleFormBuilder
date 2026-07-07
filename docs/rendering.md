@@ -48,6 +48,54 @@ YourWebProject/
 
 ASP.NET Core picks up local files over the ones in the package. No configuration needed.
 
+## Multi-language (dictionary tokens)
+
+Any user-facing text on a form can be translated per culture using the `{{ DictionaryKey }}` token syntax. At render time each token is replaced with the matching **Umbraco Dictionary** value for the current culture. If a key has no translation the original text is kept, so nothing ever disappears.
+
+Supported fields:
+
+| Where | Property |
+|---|---|
+| Field label | `Label` |
+| Field placeholder | `Placeholder` (incl. the `select` empty option) |
+| Option text | `Options[].Text` for `select`, `radio`, `checkbox` (the `Value` is never translated) |
+| Validation message | `ValidationMessage` |
+| Group title | group `Name` (legend) |
+| Submit / Reset button | `submitBtnText` / `resetBtnText` parameters |
+| Success message | form `SuccessMessage` |
+| Accept field | its `text` and `linkText` attributes |
+| Step divider | its `title` |
+| Content block (`div`) | any `{{ }}` tokens inside the raw HTML |
+
+Example — enter this as a field label in the form builder:
+
+```
+{{ ContactForm.FullName }}
+```
+
+Then create a Dictionary item `ContactForm.FullName` in Umbraco (**Settings → Dictionary**) with a value per language (e.g. `Full name` / `Họ và tên`). The label renders in the visitor's culture automatically.
+
+A single string may contain multiple tokens and mix static text:
+
+```
+{{ ContactForm.Hello }}, {{ ContactForm.Guest }}!
+```
+
+Rendering the button text with a dictionary token:
+
+```razor
+@await Component.InvokeAsync("uTProSimpleForm", new {
+    alias = "contact-us",
+    submitBtnText = "{{ ContactForm.Submit }}"
+})
+```
+
+> The success message is rendered into `data-success-msg` on the `<form>` (already localized for the page culture) and the front-end script prefers it, so the confirmation shows in the correct language regardless of the submit request's culture.
+
+### Previewing translations in the builder
+
+The form builder has a **language picker** in its toolbar (globe icon). By default it shows the raw `{{ Key }}` syntax so you always see exactly what is stored. Pick a language and the field labels and the Field Settings dialog title switch to that language's dictionary values on the spot. Keys with no translation keep the token, so you can immediately spot what still needs translating. This preview is editor-only and never changes the saved form data.
+
 ## JavaScript Hooks
 
 Two front-end hooks for custom client-side logic:

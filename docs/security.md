@@ -22,7 +22,9 @@ Two things govern access to the backoffice UI:
 | Capability | Required permission |
 |---|---|
 | See the **uTPro Form** menu | Group granted the *uTPro Form* section |
-| View form list, view entries, export CSV | Any backoffice user with the section |
+| View form list, view entries, export data (CSV / ZIP) | Any backoffice user with the section |
+| Download an uploaded file (non-sensitive field) | Any backoffice user with the section |
+| Download an uploaded file on a **Sensitive Data** field | Admin or `sensitiveData` group |
 | Create / edit / delete forms | `canEdit` (admin or Settings access) |
 | Delete entry / bulk delete | `canEdit` |
 | See decrypted sensitive/password values (else `*****`) | Admin or `sensitiveData` group |
@@ -55,6 +57,26 @@ The raw value is encrypted and a marker prefix (`uTProEncode:`) is prepended, th
 - The encryption **keys are managed by ASP.NET Data Protection**, not by this package. They are persisted by the host (by default under `App_Data`/the configured key ring). **Back them up and keep them stable** — if the key ring is lost or changes, previously encrypted values can no longer be decrypted.
 - On a **load-balanced / multi-server** setup, configure a **shared Data Protection key ring** (file share, Azure Blob, Redis, …) so every server can decrypt.
 - The marker prefix and *purpose* string are implementation details — changing them in a future version would make existing encrypted values unreadable.
+
+## File uploads (`v2.1.0+`)
+
+Files submitted through a `file` field are stored **outside `wwwroot`**, under
+`App_Data/umbraco/Data/uTProSimpleFormUploads/{formAlias}/{yyyyMM}/{guid}{ext}`, so they are
+**never served as static content** and cannot be reached by guessing a URL.
+
+- In the entry the value is a `utpro-file:{fileName}|{token}` reference. `{token}` is the
+  relative storage path encrypted with `IDataProtector` (purpose `uTPro.uTProSimpleForm.FileToken`),
+  so the physical location is never exposed and the reference cannot be tampered with.
+- Downloads go through the authenticated backoffice endpoint only. The path is re-confined
+  inside the uploads root on every request (defence in depth against path traversal).
+- A `file` field marked **Sensitive Data** is encrypted like any other sensitive value; its
+  download is denied (and the value masked as `*****`) for users without the *Sensitive Data*
+  permission — mirroring the entry-list masking.
+- Uploads are written only after the submission validates and is stored. Files are removed
+  automatically when the entry or the form is deleted, and rolled back if the submission
+  fails or the form does not store entries — so there are no orphaned files.
+- The upload endpoint enforces the field's `accept` (extension) and `maxSize` (MB) settings
+  on the server, independent of any client-side checks.
 
 ## Test Accounts (TestSite)
 

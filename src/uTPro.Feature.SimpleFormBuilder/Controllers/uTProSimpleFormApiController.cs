@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Api.Management.Routing;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Security;
+using Umbraco.Cms.Core.Services;
 using uTPro.Feature.SimpleFormBuilder.Models;
 using uTPro.Feature.SimpleFormBuilder.Services;
 
@@ -12,7 +14,9 @@ namespace uTPro.Feature.SimpleFormBuilder.Controllers;
 public class uTProSimpleFormApiController(
     IuTProSimpleFormService formService,
     IBackOfficeSecurityAccessor backOfficeSecurityAccessor,
-    IEnumerable<IuTProFormFieldTypeProvider> fieldTypeProviders) : ManagementApiControllerBase
+    IEnumerable<IuTProFormFieldTypeProvider> fieldTypeProviders,
+    ILanguageService languageService,
+    IDictionaryItemService dictionaryItemService) : ManagementApiControllerBase
 {
     // ── Permissions ──
 
@@ -99,6 +103,30 @@ public class uTProSimpleFormApiController(
         return success ? Ok(new { message }) : BadRequest(new { message });
     }
 
+    /// <summary>Streams the uploaded file behind an entry's file-field value.
+    /// Requires an authenticated backoffice user (same visibility as viewing entries).</summary>
+    [HttpGet("entry-file")]
+    public IActionResult EntryFile([FromQuery] int entryId, [FromQuery] string fieldName)
+    {
+        // Sensitive file fields are gated by the same permission that unmasks entry data.
+        var result = formService.GetEntryFile(entryId, fieldName, CanCurrentUserViewSensitiveData());
+        if (result == null) return NotFound(new { message = "File not found" });
+        return File(result.Stream, result.ContentType, result.FileName);
+    }
+
+    /// <summary>Exports all matching entries as a ZIP: one folder per entry (named by id)
+    /// containing that entry's CSV row and any uploaded files. Sensitive values/files are
+    /// masked/omitted for users without the Sensitive Data permission.</summary>
+    [HttpPost("export-entries-zip")]
+    public IActionResult ExportEntriesZip([FromBody] EntryListRequest request)
+    {
+        var result = formService.ExportEntriesZip(
+            request.FormId, CanCurrentUserViewSensitiveData(),
+            request.Search, request.DateFrom, request.DateTo);
+        if (result == null) return NotFound(new { message = "Form not found" });
+        return File(result.Content, "application/zip", result.FileName);
+    }
+
     // ── Field types ──
 
     // Built-in field types. Consuming sites add more via
@@ -143,6 +171,47 @@ public class uTProSimpleFormApiController(
         }
 
         return Ok(ordered.Select(t => new { type = t.Type, label = t.Label }));
+    }
+
+    // ── Dictionary / languages (for the builder's live translation preview) ──
+
+    /// <summary>
+    /// Returns the site's languages plus every dictionary item with its per-culture
+    /// translations. The builder uses this to preview <c>{{ Key }}</c> tokens in the
+    /// selected language. Requires forms-management (Settings section) access.
+    /// </summary>
+    [HttpPost("dictionary")]
+    public async Task<IActionResult> Dictionary()
+    {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to read the dictionary" });
+
+        var languages = (await languageService.GetAllAsync())
+            .Select(l => new { isoCode = l.IsoCode, name = l.CultureName, isDefault = l.IsDefault })
+            .ToList();
+
+        var items = new List<object>();
+        var roots = await dictionaryItemService.GetAtRootAsync();
+        await CollectDictionaryAsync(roots, items);
+
+        return Ok(new { languages, items });
+    }
+
+    private async Task CollectDictionaryAsync(IEnumerable<IDictionaryItem> nodes, List<object> acc)
+    {
+        foreach (var item in nodes)
+        {
+            var translations = item.Translations
+                .Where(t => !string.IsNullOrEmpty(t.LanguageIsoCode))
+                .GroupBy(t => t.LanguageIsoCode!)
+                .ToDictionary(g => g.Key, g => g.First().Value);
+
+            acc.Add(new { key = item.ItemKey, translations });
+
+            var children = await dictionaryItemService.GetChildrenAsync(item.Key);
+            if (children.Any())
+                await CollectDictionaryAsync(children, acc);
+        }
     }
 
     // ── Helpers ──

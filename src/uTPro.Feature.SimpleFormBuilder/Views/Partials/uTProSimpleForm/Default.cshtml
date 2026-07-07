@@ -6,9 +6,10 @@
 @{
     var formId = "uTProForm-" + Model.Alias;
     var cssClass = ViewBag.FormCssClass as string ?? "";
-    var btnText = ViewBag.SubmitBtnText as string ?? "SEND";
+    var btnText = FieldHelper.Localize(ViewBag.SubmitBtnText as string ?? "SEND", CultureDictionary);
     var showReset = ViewBag.ShowReset as bool? ?? true;
-    var resetText = ViewBag.ResetBtnText as string ?? "RESET";
+    var resetText = FieldHelper.Localize(ViewBag.ResetBtnText as string ?? "RESET", CultureDictionary);
+    var successMessage = FieldHelper.Localize(Model.SuccessMessage, CultureDictionary);
 
     // Shared ViewData passed to every field partial
     var fieldViewData = new ViewDataDictionary(ViewData)
@@ -21,7 +22,8 @@
 <form id="@formId" class="uTProForm @cssClass" novalidate
       data-alias="@Model.Alias"
       data-redirect="@(Model.RedirectUrl ?? "")"
-      data-btn-text="@btnText">
+      data-btn-text="@btnText"
+      data-success-msg="@successMessage">
     <input type="hidden" name="__alias" value="@Model.Alias" />
 
     @foreach (var group in (Model.Groups ?? []).OrderBy(g => g.SortOrder))
@@ -29,7 +31,7 @@
         <fieldset class="uTProForm-group @(group.CssClass ?? "")">
             @if (!string.IsNullOrWhiteSpace(group.Name))
             {
-                <legend class="uTProForm-group-title">@group.Name</legend>
+                <legend class="uTProForm-group-title">@FieldHelper.Localize(group.Name, CultureDictionary)</legend>
             }
             <div class="row">
                 @foreach (var col in group.Columns)

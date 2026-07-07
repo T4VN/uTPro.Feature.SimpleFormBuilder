@@ -13,7 +13,7 @@
             var cbId = h.FieldId + "-" + opt.Value;
             <label class="uTProForm-option">
                 <input type="checkbox" id="@cbId" name="@h.Name" value="@opt.Value" />
-                @opt.Text
+                @h.L(opt.Text)
             </label>
         }
     </div>
@@ -22,7 +22,7 @@ else
 {
     <label class="uTProForm-option">
         <input type="checkbox" id="@h.FieldId" name="@h.Name" value="true" />
-        @Model.Label
+        @h.L(Model.Label)
     </label>
 }
 @h.Error()

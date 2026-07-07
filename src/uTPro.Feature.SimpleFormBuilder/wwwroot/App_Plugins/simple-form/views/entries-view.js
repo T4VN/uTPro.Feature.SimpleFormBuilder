@@ -28,7 +28,25 @@ export function renderEntries(host) {
                         <uui-button look="outline" compact @click=${() => host._editSettings(host._viewFormId)}><uui-icon name="icon-settings"></uui-icon> Settings</uui-button>
                     ` : nothing}
                     ${host._entries.length ? html`
-                        <uui-button look="outline" compact @click=${() => host._exportCsv()}>Export CSV</uui-button>
+                        <uui-button look="outline" compact label="Export" title="Export entries"
+                            popovertarget="utpro-entries-export-menu">
+                            <uui-icon name="icon-download-alt"></uui-icon> Export
+                            <uui-symbol-expand slot="extra"></uui-symbol-expand>
+                        </uui-button>
+                        <uui-popover-container id="utpro-entries-export-menu" placement="bottom-end">
+                            <div class="menu-popover">
+                                <uui-menu-item label="Export data (CSV)"
+                                    title="Download a single spreadsheet with all entry data (no uploaded files)"
+                                    @click=${() => { host._exportCsv(); host._closeExportMenu(); }}>
+                                    <uui-icon slot="icon" name="icon-document"></uui-icon>
+                                </uui-menu-item>
+                                <uui-menu-item label="Export data + files (ZIP)"
+                                    title="Download a ZIP with one folder per entry, each containing its data and uploaded files"
+                                    @click=${() => { host._exportEntriesZip(); host._closeExportMenu(); }}>
+                                    <uui-icon slot="icon" name="icon-download-alt"></uui-icon>
+                                </uui-menu-item>
+                            </div>
+                        </uui-popover-container>
                     ` : nothing}
                     ${isAdmin && host._selectedEntries.length ? html`
                         <uui-button look="outline" color="danger" compact @click=${() => host._bulkDelete()}>
@@ -88,7 +106,15 @@ export function renderEntries(host) {
                         </uui-table-cell>
                         <uui-table-cell>${new Date(s.createdUtc).toLocaleString()}</uui-table-cell>
                         <uui-table-cell>${s.ipAddress || ''}</uui-table-cell>
-                        ${allKeys.map(k => html`<uui-table-cell class="cell-truncate">${s.data?.[k] || ''}</uui-table-cell>`)}
+                        ${allKeys.map(k => {
+                            const fileName = host._fileValueName(s.data?.[k]);
+                            return html`<uui-table-cell class="cell-truncate">${fileName
+                                ? html`<uui-button look="secondary" compact
+                                        @click=${() => host._downloadEntryFile(s.id, k, fileName)}>
+                                        <uui-icon name="icon-download-alt"></uui-icon> ${fileName}
+                                    </uui-button>`
+                                : (s.data?.[k] || '')}</uui-table-cell>`;
+                        })}
                         <uui-table-cell class="action-cell">
                             <uui-button look="outline" compact @click=${() => host._viewDetail(s)} title="View"><uui-icon name="icon-eye"></uui-icon></uui-button>
                             ${isAdmin ? html`

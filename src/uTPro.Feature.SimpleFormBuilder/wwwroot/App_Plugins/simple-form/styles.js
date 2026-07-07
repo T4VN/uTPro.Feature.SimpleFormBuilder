@@ -18,6 +18,8 @@ export const dashboardStyles = css`
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
     .toolbar h2 { margin: 0; font-size: 1.3rem; }
     .toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .preview-lang { display: inline-flex; align-items: center; gap: 6px; color: #555; font-size: 0.82rem; }
+    .preview-lang uui-icon { opacity: 0.7; }
 
     /* ── States ── */
     .loading { display: flex; justify-content: center; padding: 40px; }
@@ -212,6 +214,16 @@ export const dashboardStyles = css`
 
     /* All dialog footer buttons are grouped on the right (Close is the last/right-most). */
     .dlg-close { }
+
+    /* Dropdown popover surface (e.g. the Entries "Export" menu). Scoped to the dashboard
+       shadow root, so it needs its own background/shadow like the sidebar's copy. */
+    .menu-popover {
+        background: var(--uui-color-surface, #fff);
+        border-radius: var(--uui-border-radius, 3px);
+        box-shadow: var(--uui-shadow-depth-3, 0 8px 22px rgba(0,0,0,0.20));
+        padding: var(--uui-size-space-2, 6px) 0;
+        min-width: 200px;
+    }
 
     /* ── Group cards (uui-box provides the border/surface) ── */
     .group-card {

@@ -25,7 +25,8 @@ Database-agnostic: runs on **SQL Server**, **SQLite** and **PostgreSQL** (`v2.0.
 - **19 built-in field types** + a 2-step custom field type extension point
 - Client-side validation with multi-language (Umbraco Dictionary) messages
 - **Sensitive fields encrypted at rest** (ASP.NET Data Protection), masked in the UI
-- Entry storage with search, date-range filters, paging and CSV export
+- **File uploads** stored outside `wwwroot`, served only via an authenticated download endpoint (`v2.1.0+`)
+- Entry storage with search, date-range filters, paging, and export as **CSV** (data only) or **ZIP** (per-entry folders with data + uploaded files)
 - **Form Picker** property editor (+ ready-made data type) to choose a form from content, with server-side publish validation
 - Public REST APIs for submit / render / entries (opt-in per form)
 - Role-aware UI driven by Umbraco user groups
