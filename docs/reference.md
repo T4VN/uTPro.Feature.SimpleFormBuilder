@@ -18,7 +18,7 @@ uTPro.Feature.SimpleFormBuilder/
 │   └── FormPickerDataType.cs                # Ensures the "uTPro Form Picker" data type exists
 ├── Models/
 │   ├── FormModels.cs                        # DTOs, ViewModels, request models
-│   └── SimpleFormFieldType.cs               # Field-type descriptor for the custom-type extension point
+│   └── SimpleFormFieldType.cs               # Field-type descriptor (+ SimpleFormFieldAttribute custom settings) for the custom-type extension point
 ├── PropertyEditors/
 │   └── FormPickerDataEditor.cs              # Server schema for the Form Picker + publish-time value validation
 ├── Services/

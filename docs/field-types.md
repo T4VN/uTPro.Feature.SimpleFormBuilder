@@ -91,6 +91,37 @@ public class MyFormFieldsComposer : IComposer
 
 Register several at once with `builder.AdduTProSimpleFormFieldTypes(...)`. Build and restart. Your new field type now appears in the form builder, merged with the built-in ones.
 
+### Step 3 (optional) — Add custom settings
+
+`v2.2.0+` — A custom type can declare its own settings. The form builder renders a **labelled input for each one** in the field's settings dialog (the same custom area the built-in Time Picker uses for its Min/Max), and saves the entered value into the field's `Attributes` dictionary — no package edits required.
+
+Declare them by passing `SimpleFormFieldAttribute` entries when registering:
+
+```csharp
+using uTPro.Feature.SimpleFormBuilder.Models;
+using uTPro.Feature.SimpleFormBuilder.Services;
+
+builder.AdduTProSimpleFormFieldType("star-rating", "Star Rating",
+    new SimpleFormFieldAttribute("max", "Max Stars", placeholder: "5", inputType: "number"));
+```
+
+| `SimpleFormFieldAttribute` argument | Purpose |
+|---|---|
+| `key` | Key the value is stored under in the field's `Attributes` (read it in the partial with `h.Attr("key")`). |
+| `label` | Label shown next to the input in the builder. |
+| `placeholder` *(optional)* | Placeholder text for the input. |
+| `inputType` *(optional)* | HTML input type — e.g. `text` (default), `number`, `password`. |
+
+Read the value back in your partial via `FieldHelper`:
+
+```razor
+@{ var max = h.Attr("max", "5"); }
+```
+
+> Values are stored per field, so each form can configure the same custom type differently.
+> Leave the standard **Default Value** / **Placeholder** boxes for their usual meaning and keep
+> type-specific settings in dedicated attributes.
+
 ## FieldHelper — toolkit for field partials
 
 Every field partial can use `FieldHelper` to avoid repetitive HTML:
@@ -148,21 +179,23 @@ Wrap an Umbraco Dictionary key in double curly braces:
 @h.Error()
 ```
 
-**Step 2** — Register the type from your site in a composer:
+**Step 2** — Register the type from your site in a composer. Declare a `max` setting so editors can choose how many stars to show (rendered as a labelled input in the builder, `v2.2.0+`):
 
 ```csharp
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
+using uTPro.Feature.SimpleFormBuilder.Models;
 using uTPro.Feature.SimpleFormBuilder.Services;
 
 public class StarRatingFieldComposer : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
-        => builder.AdduTProSimpleFormFieldType("star-rating", "Star Rating");
+        => builder.AdduTProSimpleFormFieldType("star-rating", "Star Rating",
+            new SimpleFormFieldAttribute("max", "Max Stars", placeholder: "5", inputType: "number"));
 }
 ```
 
-Done. The field shows up in the builder and renders with stars on the front-end.
+Done. The field shows up in the builder — with a **Max Stars** input — and renders with stars on the front-end (the partial reads it via `h.Attr("max", "5")`).
 
 > A complete, runnable version of this example ships in the bundled **TestSite**
 > (`Examples/StarRatingFieldComposer.cs` + `Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml`),

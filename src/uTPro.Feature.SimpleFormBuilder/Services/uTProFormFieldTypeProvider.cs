@@ -47,6 +47,22 @@ public static class uTProSimpleFormBuilderExtensions
         this IUmbracoBuilder builder, string type, string label)
         => builder.AdduTProSimpleFormFieldTypes(new SimpleFormFieldType(type, label));
 
+    /// <summary>
+    /// Registers a single custom field type together with the custom settings the builder
+    /// should render for it (labelled inputs saved into the field's <c>Attributes</c>).
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// builder.AdduTProSimpleFormFieldType("turnstile", "Cloudflare Turnstile",
+    ///     new SimpleFormFieldAttribute("siteKey", "Site Key"),
+    ///     new SimpleFormFieldAttribute("secretKey", "Secret Key"));
+    /// </code>
+    /// </example>
+    public static IUmbracoBuilder AdduTProSimpleFormFieldType(
+        this IUmbracoBuilder builder, string type, string label,
+        params SimpleFormFieldAttribute[] attributes)
+        => builder.AdduTProSimpleFormFieldTypes(new SimpleFormFieldType(type, label, attributes));
+
     /// <summary>Registers several custom field types at once.</summary>
     public static IUmbracoBuilder AdduTProSimpleFormFieldTypes(
         this IUmbracoBuilder builder, params SimpleFormFieldType[] types)

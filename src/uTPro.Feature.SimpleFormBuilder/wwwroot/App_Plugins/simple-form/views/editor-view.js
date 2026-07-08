@@ -419,6 +419,19 @@ function _renderTypeAttributes(host, field, idx, loc) {
     if (t === 'range') return html`<div class="field-attrs"><label>Min <uui-input .value=${a.min || '0'} @input=${(e) => s('min', e.target.value)}></uui-input></label><label>Max <uui-input .value=${a.max || '100'} @input=${(e) => s('max', e.target.value)}></uui-input></label><label>Step <uui-input .value=${a.step || '1'} @input=${(e) => s('step', e.target.value)}></uui-input></label></div>`;
     if (t === 'accept') return html`<div class="field-attrs"><label>Text <uui-input .value=${a.text || ''} @input=${(e) => s('text', e.target.value)}></uui-input></label><label>Link URL <uui-input .value=${a.linkUrl || ''} @input=${(e) => s('linkUrl', e.target.value)}></uui-input></label><label>Link Text <uui-input .value=${a.linkText || ''} @input=${(e) => s('linkText', e.target.value)}></uui-input></label></div>`;
     if (t === 'step') return html`<div class="field-attrs"><label>Title <uui-input .value=${a.title || ''} @input=${(e) => s('title', e.target.value)}></uui-input></label></div>`;
+
+    // Schema-driven attributes: custom field types (registered by a consuming site via
+    // AdduTProSimpleFormFieldType with SimpleFormFieldAttribute) declare their own labelled
+    // settings. Rendered here so sites can configure custom types without editing the package.
+    const def = host._fieldTypes.find(ft => ft.type === t);
+    if (def?.attributes?.length) {
+        return html`<div class="field-attrs">${def.attributes.map(attr => html`
+            <label>${attr.label} <uui-input
+                type=${attr.inputType || 'text'}
+                .value=${a[attr.key] || ''}
+                placeholder=${attr.placeholder || ''}
+                @input=${(e) => s(attr.key, e.target.value)}></uui-input></label>`)}</div>`;
+    }
     return nothing;
 }
 

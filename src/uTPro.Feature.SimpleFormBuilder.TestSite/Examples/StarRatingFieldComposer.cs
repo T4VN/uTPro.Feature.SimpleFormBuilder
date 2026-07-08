@@ -1,5 +1,6 @@
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
+using uTPro.Feature.SimpleFormBuilder.Models;
 using uTPro.Feature.SimpleFormBuilder.Services;
 
 namespace uTPro.Feature.SimpleFormBuilder.TestSite.Examples;
@@ -10,8 +11,11 @@ namespace uTPro.Feature.SimpleFormBuilder.TestSite.Examples;
 ///
 /// Two consumer-side steps, both done in THIS project:
 ///   1. Register the field type so it shows in the backoffice picker (this file).
+///      Optionally declare custom settings (SimpleFormFieldAttribute) — the builder
+///      renders a labelled input for each and stores the value in the field's Attributes.
 ///   2. Provide its Razor partial at
 ///      Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml
+///      (reads the setting via FieldHelper.Attr("max", "5")).
 ///
 /// The package merges this custom type with its built-in ones and the front-end
 /// resolver automatically picks up the matching partial.
@@ -19,5 +23,6 @@ namespace uTPro.Feature.SimpleFormBuilder.TestSite.Examples;
 public class StarRatingFieldComposer : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
-        => builder.AdduTProSimpleFormFieldType("star-rating", "Star Rating");
+        => builder.AdduTProSimpleFormFieldType("star-rating", "Star Rating",
+            new SimpleFormFieldAttribute("max", "Max Stars", placeholder: "5", inputType: "number"));
 }

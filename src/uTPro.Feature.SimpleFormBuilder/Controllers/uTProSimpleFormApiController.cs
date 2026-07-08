@@ -170,7 +170,18 @@ public class uTProSimpleFormApiController(
             else { index[ft.Type] = ordered.Count; ordered.Add(ft); }
         }
 
-        return Ok(ordered.Select(t => new { type = t.Type, label = t.Label }));
+        return Ok(ordered.Select(t => new
+        {
+            type = t.Type,
+            label = t.Label,
+            attributes = t.Attributes.Select(a => new
+            {
+                key = a.Key,
+                label = a.Label,
+                placeholder = a.Placeholder,
+                inputType = a.InputType,
+            }),
+        }));
     }
 
     // ── Dictionary / languages (for the builder's live translation preview) ──

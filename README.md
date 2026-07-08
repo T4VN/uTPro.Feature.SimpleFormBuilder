@@ -22,7 +22,7 @@ Database-agnostic: runs on **SQL Server**, **SQLite** and **PostgreSQL** (`v2.0.
 - Visual builder: groups → 12-column layout → fields, with live settings
 - **Copy / paste** groups, columns and fields across forms (browser `localStorage`)
 - **Import / Export** form definitions as JSON (layout only — no entries)
-- **19 built-in field types** + a 2-step custom field type extension point
+- **19 built-in field types** + a custom field type extension point (custom types can declare their own labelled settings)
 - Client-side validation with multi-language (Umbraco Dictionary) messages
 - **Sensitive fields encrypted at rest** (ASP.NET Data Protection), masked in the UI
 - **File uploads** stored outside `wwwroot`, served only via an authenticated download endpoint (`v2.1.0+`)
@@ -71,7 +71,7 @@ For **PostgreSQL**, install the community provider [`Our.Umbraco.PostgreSql`](ht
 | [Getting Started](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/getting-started.md) | Install, compatibility, backoffice layout, building a form, copy/paste |
 | [Rendering a Form](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/rendering.md) | ViewComponent, parameters, template resolution, overriding views, JS hooks |
 | [Form Picker](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/form-picker.md) | Choose a form from content, Allowed-forms setting, publish validation |
-| [Field Types](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/field-types.md) | Built-in types, custom field types, FieldHelper, Star Rating example |
+| [Field Types](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/field-types.md) | Built-in types, custom field types + custom settings, FieldHelper, Star Rating example |
 | [Public APIs & Import/Export](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/public-apis.md) | submit / render / entries endpoints, JSON import/export |
 | [Security & Permissions](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/security.md) | Roles, sensitive-data encryption (encode/decode), test accounts |
 | [Reference](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/reference.md) | Project structure, static assets, database tables, migrations |
