@@ -11,20 +11,6 @@ using Umbraco.Cms.Infrastructure.Migrations.Upgrade;
 namespace uTPro.Feature.SimpleFormBuilder.Migrations;
 
 /// <summary>
-/// Registers the migration handler that runs the uTProSimpleForm migration plan
-/// on application start.
-/// </summary>
-public class RunuTProSimpleFormMigration : IComposer
-{
-    public void Compose(IUmbracoBuilder builder)
-    {
-        builder.AddNotificationAsyncHandler<
-            UmbracoApplicationStartedNotification,
-            uTProSimpleFormMigrationHandler>();
-    }
-}
-
-/// <summary>
 /// Executes the uTProSimpleForm migration plan. The plan is keyed by state, so each
 /// step runs at most once per database; already-migrated databases are left untouched.
 /// </summary>

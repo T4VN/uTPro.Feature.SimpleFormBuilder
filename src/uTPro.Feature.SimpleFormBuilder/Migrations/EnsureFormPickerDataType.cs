@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
@@ -9,16 +8,6 @@ using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 
 namespace uTPro.Feature.SimpleFormBuilder.Migrations;
-
-/// <summary>
-/// Ships a ready-to-use "uTPro Form Picker" Data Type so editors don't have to
-/// create one by hand. Created once on startup if it does not already exist.
-/// </summary>
-public class FormPickerDataTypeComposer : IComposer
-{
-    public void Compose(IUmbracoBuilder builder)
-        => builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, EnsureFormPickerDataType>();
-}
 
 public class EnsureFormPickerDataType
     : INotificationAsyncHandler<UmbracoApplicationStartedNotification>

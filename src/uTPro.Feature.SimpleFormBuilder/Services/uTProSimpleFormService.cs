@@ -5,56 +5,13 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NPoco;
-using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Extensions;
 using uTPro.Feature.SimpleFormBuilder.Models;
 
 namespace uTPro.Feature.SimpleFormBuilder.Services;
-
-class DIuTProSimpleFormService : IComposer
-{
-    public void Compose(IUmbracoBuilder builder)
-        // Singleton (not Scoped): the service opens its own DB scope per method via
-        // IScopeProvider and has only singleton dependencies. Being a singleton lets
-        // it be injected into the Form Picker value editor, which Umbraco builds from
-        // the root service provider (scoped services can't be resolved there).
-        => builder.Services.AddSingleton<IuTProSimpleFormService, uTProSimpleFormService>();
-}
-
-public interface IuTProSimpleFormService
-{
-    List<FormViewModel> GetAllForms();
-    FormViewModel? GetForm(int id);
-    FormViewModel? GetFormByAlias(string alias);
-    (bool Success, string Message, int Id) SaveForm(SaveFormRequest request);
-    (bool Success, string Message) DeleteForm(int id);
-    FormExportModel? ExportForm(int id);
-    (bool Success, string Message, int Id) ImportForm(FormExportModel model);
-    (bool Success, string Message) SubmitForm(string alias, Dictionary<string, string> data, IReadOnlyList<FormFileUpload> files, string? ip, string? ua);
-    PagedResult<EntryViewModel> GetEntries(int formId, int skip, int take, bool canViewSensitive = false, string? search = null, DateTime? dateFrom = null, DateTime? dateTo = null);
-    (bool Success, string Message) DeleteEntry(int id);
-
-    /// <summary>Resolves the physical file behind an entry's file-field value for download.
-    /// Sensitive (encrypted) file fields require <paramref name="canViewSensitive"/> to be true.</summary>
-    EntryFileResult? GetEntryFile(int entryId, string fieldName, bool canViewSensitive = false);
-
-    /// <summary>Builds a ZIP of all matching entries: one folder per entry (named by id)
-    /// containing that entry's CSV row and any uploaded files.</summary>
-    EntriesExportResult? ExportEntriesZip(int formId, bool canViewSensitive, string? search, DateTime? dateFrom, DateTime? dateTo);
-}
-
-/// <summary>A generated ZIP export of form entries.</summary>
-public sealed record EntriesExportResult(byte[] Content, string FileName);
-
-/// <summary>A file uploaded together with a form submission, mapped to its field.</summary>
-public sealed record FormFileUpload(string FieldName, IFormFile File);
-
-/// <summary>Physical file resolved from an entry's file-field value.</summary>
-public sealed record EntryFileResult(Stream Stream, string FileName, string ContentType);
 
 internal class uTProSimpleFormService(
     IScopeProvider scopeProvider,
