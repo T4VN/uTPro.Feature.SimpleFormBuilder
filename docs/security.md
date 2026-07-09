@@ -78,6 +78,40 @@ Files submitted through a `file` field are stored **outside `wwwroot`**, under
 - The upload endpoint enforces the field's `accept` (extension) and `maxSize` (MB) settings
   on the server, independent of any client-side checks.
 
+## Rate limiting & anti-spam (`v2.3.0+`)
+
+The public submit endpoint is protected by a built-in **per-IP + per-form** fixed-window rate limiter, enabled by default. It runs first in the [submission pipeline](public-apis.md#extending-the-submission-pipeline-iformsubmissionhandler-v230), so throttled requests are rejected before any work is done and nothing is stored.
+
+Partitioning by *IP + form alias* means a flood on one form can't lock visitors out of your other forms. When the limit is exceeded the endpoint returns **HTTP 429** with a "Too many submissions" message.
+
+Configure it under `uTPro:Feature:Form:RateLimit` in `appsettings.json`:
+
+```json
+{
+  "uTPro": {
+    "Feature": {
+      "Form": {
+        "RateLimit": {
+          "Enabled": true,
+          "PermitLimit": 5,
+          "WindowSeconds": 60
+        }
+      }
+    }
+  }
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `Enabled` | `true` | Turns per-IP/form throttling on or off. |
+| `PermitLimit` | `5` | Maximum submissions allowed per window, per IP + form. |
+| `WindowSeconds` | `60` | Length of the fixed window in seconds. |
+
+> **Behind a reverse proxy or load balancer**, the limiter needs the *real* client IP — otherwise every visitor shares the proxy's IP and the limit throttles everyone as one. Make sure the host forwards the client IP. In uTPro, enable the `uTPro:ForwardedHeaders` section (see the uTPro Configurations doc); in a custom host, configure ASP.NET Core forwarded headers yourself.
+
+For custom anti-spam (captcha, honeypot, blocklists) add your own `IFormSubmissionHandler` — see [Extending the submission pipeline](public-apis.md#extending-the-submission-pipeline-iformsubmissionhandler-v230).
+
 ## Test Accounts (TestSite)
 
 The bundled `TestSite` auto-seeds the accounts below on startup (see `TestUserSeeder.cs`) so the role/permission matrix can be exercised immediately — even after wiping the database. All share the unattended admin password `Admin1234!`. The seeder also creates the `sensitiveData` and `Admin Custom` user groups and grants them the *uTPro Form* section.

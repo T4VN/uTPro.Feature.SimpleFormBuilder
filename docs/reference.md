@@ -14,16 +14,30 @@ uTPro.Feature.SimpleFormBuilder/
 │   ├── uTProSimpleFormAssets.cs             # Resolves front-end CSS/JS paths
 │   └── uTProSimpleFormHtmlHelper.cs         # FieldHelper used in partials
 ├── Migrations/
-│   ├── uTProSimpleFormMigration.cs          # AsyncMigrationBase: creates tables + seeds sample data
-│   └── FormPickerDataType.cs                # Ensures the "uTPro Form Picker" data type exists
-├── Models/
-│   ├── FormModels.cs                        # DTOs, ViewModels, request models
-│   └── SimpleFormFieldType.cs               # Field-type descriptor (+ SimpleFormFieldAttribute custom settings) for the custom-type extension point
+│   ├── InituTProSimpleForm.cs               # AsyncMigrationBase: creates tables + seeds sample data
+│   ├── AddShowInPickerColumn.cs             # Idempotent migration adding the ShowInPicker column
+│   ├── RunuTProSimpleFormMigration.cs       # Runs the migration plan on startup
+│   ├── EnsureFormPickerDataType.cs          # Ensures the "uTPro Form Picker" data type exists
+│   └── FormPickerDataTypeComposer.cs        # Wires up the data-type check
+├── Models/                                   # One type per file (DTOs, ViewModels, requests)
+│   ├── FormViewModel / FormGroupViewModel / FormColumnViewModel / FormFieldViewModel / EntryViewModel …
+│   ├── uTProSimpleFormDto.cs / uTProSimpleFormEntryDto.cs   # NPoco table DTOs
+│   ├── SimpleFormFieldType.cs               # Field-type descriptor for the custom-type extension point
+│   ├── SimpleFormFieldAttribute.cs          # Custom per-field settings declared by custom field types
+│   ├── FormSubmissionContext.cs             # State handed to each submission handler
+│   ├── FormSubmissionResult.cs              # Continue / Reject result from a handler
+│   └── FormSubmissionOptions.cs             # Binds uTPro:Feature:Form (rate-limit settings)
 ├── PropertyEditors/
-│   └── FormPickerDataEditor.cs              # Server schema for the Form Picker + publish-time value validation
+│   ├── FormPickerDataEditor.cs              # Server schema for the Form Picker
+│   ├── FormPickerDataValueEditor.cs         # Value editor
+│   └── FormPickerValueValidator.cs          # Publish-time value validation
 ├── Services/
 │   ├── uTProSimpleFormService.cs            # Core logic, encryption, entry management
-│   └── uTProFormFieldTypeProvider.cs        # IuTProFormFieldTypeProvider + AdduTProSimpleFormFieldType() extension
+│   ├── DIuTProSimpleFormService.cs          # DI registration / composer
+│   ├── uTProSimpleFormBuilderExtensions.cs  # AdduTProSimpleFormFieldType() extension
+│   ├── IuTProFormFieldTypeProvider.cs + StaticFieldTypeProvider.cs   # Custom field-type registry
+│   ├── IFormSubmissionHandler.cs            # Submission-pipeline extension point (v2.3.0+)
+│   └── RateLimitSubmissionHandler.cs        # Built-in per-IP + per-form rate limiter
 ├── ViewComponents/
 │   └── uTProSimpleFormViewComponent.cs      # The @Component.InvokeAsync entry point
 ├── Views/Partials/uTProSimpleForm/
@@ -51,6 +65,18 @@ The package serves its `wwwroot` at the site root (`StaticWebAssetBasePath = /`)
 
 - Backoffice assets resolve at `/App_Plugins/simple-form/...` (where Umbraco discovers the package manifest)
 - Front-end assets resolve at `/uTPro/simple-form/...`
+
+## Configuration
+
+All settings are optional — the package ships with safe defaults. Options live under `uTPro:Feature:Form` in `appsettings.json` and are bound to `FormSubmissionOptions`:
+
+| Section | Key | Default | Purpose |
+|---|---|---|---|
+| `uTPro:Feature:Form:RateLimit` | `Enabled` | `true` | Per-IP + per-form throttling of the public submit endpoint (`v2.3.0+`) |
+| `uTPro:Feature:Form:RateLimit` | `PermitLimit` | `5` | Max submissions per window per IP + form |
+| `uTPro:Feature:Form:RateLimit` | `WindowSeconds` | `60` | Fixed-window length in seconds |
+
+See [Security & Permissions → Rate limiting](security.md#rate-limiting--anti-spam-v230) for details and reverse-proxy notes.
 
 ## Uploaded files storage (`v2.1.0+`)
 

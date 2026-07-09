@@ -85,6 +85,53 @@ Content-Type: application/json
 In the backoffice these are surfaced by the file download button on each entry and by the
 **Export → Export data + files (ZIP)** action in the entries toolbar.
 
+## Extending the submission pipeline (`IFormSubmissionHandler`) (`v2.3.0+`)
+
+Every submission — whether it arrives as JSON or `multipart/form-data` — runs through a small pipeline **after the request is parsed but before the entry is stored**. You can plug in your own steps for captcha verification, anti-spam, or per-submission custom-field validation, without touching the package or the HTTP pipeline.
+
+Implement `IFormSubmissionHandler` and register it in DI. The submit endpoint resolves **all** registered handlers, runs them ordered by `Order` (ascending), and returns the first failing result — stopping the submission before anything is saved.
+
+```csharp
+using uTPro.Feature.SimpleFormBuilder.Models;
+using uTPro.Feature.SimpleFormBuilder.Services;
+
+public sealed class TurnstileSubmissionHandler : IFormSubmissionHandler
+{
+    // Lower runs first. Use a low value for gatekeepers (rate limit),
+    // higher values for field-specific validation.
+    public int Order => 100;
+
+    public async Task<FormSubmissionResult> HandleAsync(
+        FormSubmissionContext context, CancellationToken cancellationToken)
+    {
+        // Only act on forms that actually contain a turnstile field, etc.
+        var token = context.Data.TryGetValue("cf-turnstile-response", out var t) ? t : null;
+        if (string.IsNullOrEmpty(token) /* || !await VerifyAsync(token) */)
+            return FormSubmissionResult.Reject("Captcha verification failed.");
+
+        return FormSubmissionResult.Continue;
+    }
+}
+```
+
+```csharp
+// In a composer / Program.cs
+builder.Services.AddTransient<IFormSubmissionHandler, TurnstileSubmissionHandler>();
+```
+
+**`FormSubmissionContext`** gives each handler the resolved `Form` (only enabled forms reach the pipeline), the submitted `Data` (field name → value), the `IpAddress`, `UserAgent`, and the current `HttpContext`.
+
+**`FormSubmissionResult`** is either:
+
+- `FormSubmissionResult.Continue` — let the submission proceed.
+- `FormSubmissionResult.Reject("message"[, statusCode])` — stop it; the message is returned to the submitter and the status code defaults to `400`.
+
+### Built-in rate limiting
+
+A rate-limiting handler ships enabled by default (it runs first, `Order = int.MinValue`) and throttles the public submit endpoint per **IP + form alias**. Configure it under `uTPro:Feature:Form:RateLimit` — see [Security & Permissions → Rate limiting](security.md#rate-limiting--anti-spam-v230).
+
+> Behind a reverse proxy, per-IP limiting only works if the host resolves the real client IP. In uTPro, enable the `uTPro:ForwardedHeaders` section (see the uTPro Configurations doc).
+
 ## Import / Export
 
 ![Import / Export](../Image/Screenshots/import-export.png)
