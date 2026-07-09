@@ -8,7 +8,9 @@ namespace uTPro.Feature.SimpleFormBuilder.Controllers;
 
 [ApiController]
 [Route("api/utpro/simple-form")]
-public class uTProSimpleFormSubmitController(IuTProSimpleFormService formService) : ControllerBase
+public class uTProSimpleFormSubmitController(
+    IuTProSimpleFormService formService,
+    IEnumerable<IFormSubmissionHandler> submissionHandlers) : ControllerBase
 {
     // Client names each uploaded file "file:{fieldName}" so we can map it back to its field.
     private const string FileFieldPrefix = "file:";
@@ -63,6 +65,29 @@ public class uTProSimpleFormSubmitController(IuTProSimpleFormService formService
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var ua = HttpContext.Request.Headers.UserAgent.ToString();
+
+        // Run the submission pipeline (rate limiting, captcha, custom field logic…) on the
+        // resolved form before anything is persisted. The first handler to reject wins.
+        var formModel = formService.GetFormByAlias(alias);
+        if (formModel is { IsEnabled: true })
+        {
+            var context = new FormSubmissionContext
+            {
+                Form = formModel,
+                Data = data,
+                IpAddress = ip,
+                UserAgent = ua,
+                HttpContext = HttpContext
+            };
+
+            foreach (var handler in submissionHandlers.OrderBy(h => h.Order))
+            {
+                var result = await handler.HandleAsync(context, HttpContext.RequestAborted);
+                if (!result.Success)
+                    return StatusCode(result.StatusCode, new { message = result.Message });
+            }
+        }
+
         var (success, message) = formService.SubmitForm(alias, data, files, ip, ua);
         return success ? Ok(new { message }) : BadRequest(new { message });
     }
