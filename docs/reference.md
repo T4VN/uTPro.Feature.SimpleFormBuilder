@@ -87,6 +87,10 @@ the app content root under:
 App_Data/umbraco/Data/uTProSimpleFormUploads/{formAlias}/{yyyyMM}/{guid}{ext}
 ```
 
+The root folder is configurable via `uTPro:Feature:Form:FileUploadsPath` (`v2.3.1+`) — absolute,
+or relative to the content root — so multi-app deployments can share one folder. See
+[Security & Permissions](security.md#storage-location-v231) for details.
+
 This folder is never served statically. Files are only retrievable via the authenticated
 `entry-file` endpoint (or bundled by the ZIP export), and are cleaned up when their entry
 or form is deleted. See [Security & Permissions](security.md) for the full model.

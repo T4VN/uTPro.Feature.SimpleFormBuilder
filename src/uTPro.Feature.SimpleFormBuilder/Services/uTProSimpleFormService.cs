@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NPoco;
 using Umbraco.Cms.Infrastructure.Scoping;
@@ -17,7 +18,8 @@ internal class uTProSimpleFormService(
     IScopeProvider scopeProvider,
     ILogger<uTProSimpleFormService> logger,
     IDataProtectionProvider dataProtectionProvider,
-    IWebHostEnvironment webHostEnvironment) : IuTProSimpleFormService
+    IWebHostEnvironment webHostEnvironment,
+    IConfiguration configuration) : IuTProSimpleFormService
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private const string ProtectorPurpose = "uTPro.uTProSimpleForm.SensitiveField";
@@ -32,9 +34,27 @@ internal class uTProSimpleFormService(
 
     private IDataProtector Protector => dataProtectionProvider.CreateProtector(ProtectorPurpose);
     private IDataProtector FileTokenProtector => dataProtectionProvider.CreateProtector(FileTokenPurpose);
-    // Stored under the app content root (not wwwroot), so files are never served statically.
-    private string FileUploadsRoot => Path.Combine(
-        webHostEnvironment.ContentRootPath, "umbraco", "Data", "uTProSimpleFormUploads");
+    // Stored OUTSIDE wwwroot (never served statically — only streamed through the
+    // authenticated backoffice endpoint). Location can be overridden via
+    // uTPro:Feature:Form:FileUploadsPath so load-balanced apps (backoffice + website)
+    // can share one physical folder; a relative value is resolved against the content
+    // root. Empty (default) = <ContentRoot>\umbraco\Data\uTProSimpleFormUploads.
+    private string FileUploadsRoot
+    {
+        get
+        {
+            var configured = configuration["uTPro:Feature:Form:FileUploadsPath"];
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                return Path.IsPathRooted(configured)
+                    ? configured
+                    : Path.GetFullPath(Path.Combine(webHostEnvironment.ContentRootPath, configured));
+            }
+
+            return Path.Combine(
+                webHostEnvironment.ContentRootPath, "umbraco", "Data", "uTProSimpleFormUploads");
+        }
+    }
 
     public List<FormViewModel> GetAllForms()
     {

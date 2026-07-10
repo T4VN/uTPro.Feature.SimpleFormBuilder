@@ -78,6 +78,32 @@ Files submitted through a `file` field are stored **outside `wwwroot`**, under
 - The upload endpoint enforces the field's `accept` (extension) and `maxSize` (MB) settings
   on the server, independent of any client-side checks.
 
+### Storage location (`v2.3.1+`)
+
+By default files are stored under `App_Data/umbraco/Data/uTProSimpleFormUploads` in the app's
+**content root**. You can point this elsewhere with `uTPro:Feature:Form:FileUploadsPath`:
+
+```json
+{
+  "uTPro": {
+    "Feature": {
+      "Form": {
+        "FileUploadsPath": "D:\\shared\\form-uploads"
+      }
+    }
+  }
+}
+```
+
+- An absolute path is used as-is; a relative value is resolved against the content root.
+- Empty (the default) keeps `<ContentRoot>/umbraco/Data/uTProSimpleFormUploads`.
+- Intended for **load-balanced / multi-app** deployments (e.g. a separate backoffice app and
+  website app on a shared database): point every app at the **same folder** so an upload
+  received by one app can be downloaded from another. Keep it **outside `wwwroot`** — the files
+  are still only served through the authenticated download endpoint, never as static content.
+- The path-traversal confinement still applies: downloads are re-confined inside this root on
+  every request.
+
 ## Rate limiting & anti-spam (`v2.3.0+`)
 
 The public submit endpoint is protected by a built-in **per-IP + per-form** fixed-window rate limiter, enabled by default. It runs first in the [submission pipeline](public-apis.md#extending-the-submission-pipeline-iformsubmissionhandler-v230), so throttled requests are rejected before any work is done and nothing is stored.
