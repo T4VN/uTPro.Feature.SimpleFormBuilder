@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Core.DependencyInjection;
 using uTPro.Feature.SimpleFormBuilder.Models;
 
 namespace uTPro.Feature.SimpleFormBuilder.Services;
