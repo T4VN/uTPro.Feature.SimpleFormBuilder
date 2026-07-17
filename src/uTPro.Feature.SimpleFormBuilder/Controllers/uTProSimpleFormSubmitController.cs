@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using uTPro.Feature.SimpleFormBuilder.Helpers;
 using uTPro.Feature.SimpleFormBuilder.Models;
 using uTPro.Feature.SimpleFormBuilder.Services;
 
@@ -98,6 +99,9 @@ public class uTProSimpleFormSubmitController(
         var form = formService.GetFormByAlias(alias);
         if (form == null || !form.IsEnabled) return NotFound(new { message = "Form not found" });
         if (!form.EnableRenderApi) return NotFound(new { message = "Render API is disabled for this form" });
+        // Never leak secrets (e.g. a Turnstile "secretKey") stored in field attributes to a
+        // public, anonymous client. Redact sensitive attribute keys before serialising.
+        FormSanitizer.SanitizeForOutput(form);
         return Ok(form);
     }
 

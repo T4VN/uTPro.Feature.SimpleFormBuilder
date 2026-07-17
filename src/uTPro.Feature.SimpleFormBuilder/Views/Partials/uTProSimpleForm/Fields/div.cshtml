@@ -1,6 +1,15 @@
 @* Content Block — renders raw HTML from DefaultValue.
    Use for headings, paragraphs, instructions, or any custom HTML within the form.
-   Any {{ DictionaryKey }} tokens inside the HTML are localized for the current culture. *@
+   Any {{ DictionaryKey }} tokens inside the HTML are localized for the current culture.
+
+   SECURITY / TRUST BOUNDARY:
+   The content below is emitted verbatim via @Html.Raw, so it is a stored-XSS vector BY DESIGN.
+   This is acceptable ONLY because the value can be authored exclusively by trusted backoffice
+   users who can manage forms: the form builder / save endpoints are gated behind
+   CanCurrentUserManageForms() (Settings-section access), and this DefaultValue is never set
+   from an untrusted public submission. Do NOT wire this field's DefaultValue to any anonymous
+   or end-user-supplied input. If that trust assumption ever changes, run the value through an
+   HTML sanitizer (allow-list) before rendering, or switch to @content (HTML-encoded). *@
 @using uTPro.Feature.SimpleFormBuilder.Helpers
 @using Umbraco.Cms.Core.Dictionary
 @model uTPro.Feature.SimpleFormBuilder.Models.FormFieldViewModel

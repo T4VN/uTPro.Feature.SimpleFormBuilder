@@ -1,9 +1,7 @@
-using System.IO.Compression;
-using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -14,7 +12,9 @@ using uTPro.Feature.SimpleFormBuilder.Models;
 
 namespace uTPro.Feature.SimpleFormBuilder.Services;
 
-internal class uTProSimpleFormService(
+// Core service: form CRUD + import/export mapping, shared configuration/fields, and the
+// helpers reused across the entries/files/export/validation partials.
+internal partial class uTProSimpleFormService(
     IScopeProvider scopeProvider,
     ILogger<uTProSimpleFormService> logger,
     IDataProtectionProvider dataProtectionProvider,
@@ -31,6 +31,25 @@ internal class uTProSimpleFormService(
     private const string FilePrefix = "utpro-file:";
     private const string FileTokenPurpose = "uTPro.uTProSimpleForm.FileToken";
     private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
+
+    // Server-side submission hardening.
+    // Max length allowed for a normal (non-file) submitted value.
+    private const int MaxFieldLength = 8000;
+    // Default cap applied when a file field has no explicit "maxSize" (MB).
+    private const double DefaultMaxUploadMb = 10;
+    // Upper bound on the number of entries a single ZIP export will materialise, keeping
+    // memory bounded (all matching rows are otherwise loaded + zipped in memory). Override
+    // via uTPro:Feature:Form:MaxExportEntries; values <= 0 fall back to this default.
+    private const int DefaultMaxExportEntries = 10000;
+    // When a file field has no "accept" allow-list, reject these dangerous/executable/script
+    // extensions by default (defence in depth — uploads are stored outside wwwroot anyway).
+    private static readonly HashSet<string> DangerousExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "exe", "dll", "bat", "cmd", "com", "msi", "ps1", "sh", "cshtml", "razor", "aspx",
+        "asp", "php", "jsp", "svg", "html", "htm", "js", "vbs", "jar"
+    };
+    private static readonly Regex EmailRegex =
+        new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private IDataProtector Protector => dataProtectionProvider.CreateProtector(ProtectorPurpose);
     private IDataProtector FileTokenProtector => dataProtectionProvider.CreateProtector(FileTokenPurpose);
@@ -285,160 +304,6 @@ internal class uTProSimpleFormService(
         return string.IsNullOrEmpty(slug) ? "form" : slug;
     }
 
-    public (bool Success, string Message) SubmitForm(string alias, Dictionary<string, string> data, IReadOnlyList<FormFileUpload> files, string? ip, string? ua)
-    {
-        // Files are written to disk only after validation passes; track them so any
-        // later failure (or a non-storing form) rolls the writes back — no orphans.
-        var savedPaths = new List<string>();
-        try
-        {
-            using var scope = scopeProvider.CreateScope(autoComplete: true);
-            var form = scope.Database.SingleOrDefault<uTProSimpleFormDto>(
-                scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
-                    .Where<uTProSimpleFormDto>(x => x.Alias == alias));
-            if (form == null) return (false, "Form not found");
-            if (!form.IsEnabled) return (false, "Form is disabled");
-
-            var allFields = GetAllFormFields(form);
-
-            // Persist uploaded files (validate type/size), mapping each to its file field.
-            var fileFields = new Dictionary<string, FormFieldViewModel>(StringComparer.Ordinal);
-            foreach (var f in allFields.Where(f => f.Type == "file"))
-                fileFields.TryAdd(f.Name, f);
-
-            foreach (var upload in files ?? [])
-            {
-                if (upload.File == null || upload.File.Length == 0) continue;
-                // Ignore files that don't map to a known file field (defensive).
-                if (!fileFields.TryGetValue(upload.FieldName, out var field)) continue;
-
-                var (ok, message, value, fullPath) = SaveUploadedFileInternal(form, field, upload.File);
-                if (!ok)
-                {
-                    RollbackFiles(savedPaths);
-                    return (false, message);
-                }
-                savedPaths.Add(fullPath);
-                data[upload.FieldName] = value;
-            }
-
-            foreach (var f in allFields.Where(f => f.Required && !f.IsHidden))
-            {
-                if (!data.TryGetValue(f.Name, out var val) || string.IsNullOrWhiteSpace(val))
-                {
-                    RollbackFiles(savedPaths);
-                    return (false, $"Field '{f.Label}' is required");
-                }
-            }
-
-            // Encrypt sensitive fields
-            var sensitiveNames = allFields
-                .Where(f => f.IsSensitive || f.Type == "password")
-                .Select(f => f.Name)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var storageData = new Dictionary<string, string>(data);
-            foreach (var key in storageData.Keys.Where(k => sensitiveNames.Contains(k)).ToList())
-            {
-                var raw = storageData[key];
-                if (!string.IsNullOrEmpty(raw))
-                {
-                    storageData[key] = EncryptedPrefix + Protector.Protect(raw);
-                }
-            }
-
-            if (form.StoreEntries)
-            {
-                var entry = new uTProSimpleFormEntryDto
-                {
-                    FormId = form.Id,
-                    DataJson = JsonSerializer.Serialize(storageData, JsonOpts),
-                    IpAddress = ip,
-                    UserAgent = ua?.Length > 500 ? ua[..500] : ua,
-                    CreatedUtc = DateTime.UtcNow
-                };
-                scope.Database.Insert(entry);
-            }
-            else
-            {
-                // Nothing is persisted for this form, so drop any files we just wrote.
-                RollbackFiles(savedPaths);
-            }
-
-            return (true, form.SuccessMessage ?? "Thank you for your submission!");
-        }
-        catch (Exception ex)
-        {
-            RollbackFiles(savedPaths);
-            logger.LogError(ex, "Error submitting form {Alias}", alias);
-            return (false, ex.Message);
-        }
-    }
-
-    public PagedResult<EntryViewModel> GetEntries(int formId, int skip, int take, bool canViewSensitive = false, string? search = null, DateTime? dateFrom = null, DateTime? dateTo = null)
-    {
-        using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var db = scope.Database;
-        var syntax = scope.SqlContext.SqlSyntax;
-
-        var sql = scope.SqlContext.Sql()
-            .SelectAll().From<uTProSimpleFormEntryDto>()
-            .Where<uTProSimpleFormEntryDto>(x => x.FormId == formId);
-
-        if (dateFrom.HasValue)
-        {
-            var from = dateFrom.Value.Date;
-            sql = sql.Where<uTProSimpleFormEntryDto>(x => x.CreatedUtc >= from);
-        }
-        if (dateTo.HasValue)
-        {
-            var toExclusive = dateTo.Value.Date.AddDays(1);
-            sql = sql.Where<uTProSimpleFormEntryDto>(x => x.CreatedUtc < toExclusive);
-        }
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            // Quote identifiers per provider and use a plain LIKE. We intentionally do NOT
-            // wrap the column in LOWER(): on databases upgraded from v1 the JSON column is
-            // still NTEXT, and SQL Server rejects LOWER(ntext). Plain LIKE works on ntext,
-            // text and nvarchar alike. SQL Server / SQLite stay case-insensitive via their
-            // default collation; PostgreSQL LIKE is case-sensitive.
-            var dataCol = syntax.GetQuotedColumnName("DataJson");
-            var ipCol = syntax.GetQuotedColumnName("IpAddress");
-            sql = sql.Where($"({dataCol} LIKE @0 OR {ipCol} LIKE @0)", $"%{search}%");
-        }
-
-        sql = sql.OrderByDescending<uTProSimpleFormEntryDto>(x => x.CreatedUtc);
-
-        var page = db.Page<uTProSimpleFormEntryDto>(skip / Math.Max(take, 1) + 1, take, sql);
-        return new PagedResult<EntryViewModel>
-        {
-            Items = page.Items.Select(s => MapEntry(s, canViewSensitive)),
-            Total = page.TotalItems
-        };
-    }
-
-    public (bool Success, string Message) DeleteEntry(int id)
-    {
-        try
-        {
-            using var scope = scopeProvider.CreateScope(autoComplete: true);
-            var entry = scope.Database.SingleOrDefault<uTProSimpleFormEntryDto>(
-                scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormEntryDto>()
-                    .Where<uTProSimpleFormEntryDto>(x => x.Id == id));
-            if (entry != null)
-            {
-                DeleteStoredFiles(ExtractFileValues(entry.DataJson));
-                scope.Database.DeleteMany<uTProSimpleFormEntryDto>().Where(x => x.Id == id).Execute();
-            }
-            return (true, "Deleted");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error deleting entry {Id}", id);
-            return (false, ex.Message);
-        }
-    }
-
     private static FormViewModel MapToViewModel(uTProSimpleFormDto dto) => new()
     {
         Id = dto.Id, Name = dto.Name, Alias = dto.Alias,
@@ -457,334 +322,8 @@ internal class uTProSimpleFormService(
         CreatedUtc = dto.CreatedUtc, UpdatedUtc = dto.UpdatedUtc
     };
 
-    private EntryViewModel MapEntry(uTProSimpleFormEntryDto dto, bool canViewSensitive = false)
-    {
-        var data = string.IsNullOrEmpty(dto.DataJson)
-            ? new Dictionary<string, string>()
-            : JsonSerializer.Deserialize<Dictionary<string, string>>(dto.DataJson, JsonOpts) ?? [];
-
-        foreach (var key in data.Keys.ToList())
-        {
-            var val = data[key];
-            if (val != null && val.StartsWith(EncryptedPrefix))
-            {
-                if (canViewSensitive)
-                {
-                    try { data[key] = Protector.Unprotect(val[EncryptedPrefix.Length..]); }
-                    catch { data[key] = "[decryption error]"; }
-                }
-                else { data[key] = MaskedValue; }
-            }
-        }
-
-        return new EntryViewModel
-        {
-            Id = dto.Id, FormId = dto.FormId,
-            Data = data,
-            IpAddress = dto.IpAddress, CreatedUtc = dto.CreatedUtc
-        };
-    }
-
-    // ── File uploads ──
-
-    // Validates and writes a single uploaded file for a known file field.
-    // Returns the "utpro-file:" value to persist plus the physical path (for rollback).
-    private (bool Success, string Message, string Value, string FullPath) SaveUploadedFileInternal(
-        uTProSimpleFormDto form, FormFieldViewModel field, IFormFile file)
-    {
-        // Validate size against the field's "maxSize" (MB) attribute.
-        var maxSizeMb = ParseDouble(field.Attributes?.GetValueOrDefault("maxSize"));
-        if (maxSizeMb is > 0 && file.Length > maxSizeMb.Value * 1024 * 1024)
-            return (false, $"File for '{field.Label}' exceeds the maximum size of {maxSizeMb.Value:0.##} MB", string.Empty, string.Empty);
-
-        // Validate extension against the field's "accept" attribute (e.g. ".pdf,.jpg").
-        var originalName = Path.GetFileName(file.FileName);
-        var ext = Path.GetExtension(originalName);
-        var accept = field.Attributes?.GetValueOrDefault("accept");
-        if (!IsExtensionAllowed(ext, accept))
-            return (false, $"File type '{ext}' is not allowed for '{field.Label}'", string.Empty, string.Empty);
-
-        // Persist to a non-public folder: {root}/{alias}/{yyyyMM}/{guid}{ext}
-        var safeAlias = SanitizeSegment(form.Alias);
-        var subFolder = DateTime.UtcNow.ToString("yyyyMM");
-        var targetDir = Path.Combine(FileUploadsRoot, safeAlias, subFolder);
-        Directory.CreateDirectory(targetDir);
-
-        var storedName = Guid.NewGuid().ToString("N") + ext;
-        var fullPath = Path.Combine(targetDir, storedName);
-        using (var target = File.Create(fullPath))
-        {
-            file.CopyTo(target);
-        }
-
-        // Relative path is what we protect; the client never sees it.
-        var relativePath = string.Join('/', safeAlias, subFolder, storedName);
-        var token = FileTokenProtector.Protect(relativePath);
-        // Keep the display name free of the delimiter so parsing stays trivial.
-        var displayName = originalName.Replace('|', '_');
-        var value = $"{FilePrefix}{displayName}|{token}";
-        return (true, "Uploaded", value, fullPath);
-    }
-
-    // Deletes physical files by absolute path (used to roll back a failed submission).
-    private void RollbackFiles(IEnumerable<string> fullPaths)
-    {
-        foreach (var path in fullPaths)
-        {
-            try { if (File.Exists(path)) File.Delete(path); }
-            catch (Exception ex) { logger.LogWarning(ex, "Failed to roll back uploaded file {Path}", path); }
-        }
-    }
-
-    // ── Bulk ZIP export ──
-
-    public EntriesExportResult? ExportEntriesZip(int formId, bool canViewSensitive, string? search, DateTime? dateFrom, DateTime? dateTo)
-    {
-        using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var form = scope.Database.SingleOrDefault<uTProSimpleFormDto>(
-            scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormDto>()
-                .Where<uTProSimpleFormDto>(x => x.Id == formId));
-        if (form == null) return null;
-
-        // Same filtering as GetEntries, but no paging — export everything that matches.
-        var syntax = scope.SqlContext.SqlSyntax;
-        var sql = scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormEntryDto>()
-            .Where<uTProSimpleFormEntryDto>(x => x.FormId == formId);
-        if (dateFrom.HasValue)
-        {
-            var from = dateFrom.Value.Date;
-            sql = sql.Where<uTProSimpleFormEntryDto>(x => x.CreatedUtc >= from);
-        }
-        if (dateTo.HasValue)
-        {
-            var toExclusive = dateTo.Value.Date.AddDays(1);
-            sql = sql.Where<uTProSimpleFormEntryDto>(x => x.CreatedUtc < toExclusive);
-        }
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var dataCol = syntax.GetQuotedColumnName("DataJson");
-            var ipCol = syntax.GetQuotedColumnName("IpAddress");
-            sql = sql.Where($"({dataCol} LIKE @0 OR {ipCol} LIKE @0)", $"%{search}%");
-        }
-        sql = sql.OrderBy<uTProSimpleFormEntryDto>(x => x.CreatedUtc);
-
-        var entries = scope.Database.Fetch<uTProSimpleFormEntryDto>(sql);
-
-        // Parse every entry's data once, and build a stable, shared column order:
-        // form field definitions first (skipping layout-only types), then any extra keys.
-        var parsed = entries
-            .Select(e => (Entry: e, Data: string.IsNullOrEmpty(e.DataJson)
-                ? new Dictionary<string, string>()
-                : JsonSerializer.Deserialize<Dictionary<string, string>>(e.DataJson, JsonOpts) ?? []))
-            .ToList();
-
-        var columns = new List<string>();
-        foreach (var f in GetAllFormFields(form))
-            if (f.Type != "div" && f.Type != "step" && !string.IsNullOrEmpty(f.Name) && !columns.Contains(f.Name))
-                columns.Add(f.Name);
-        foreach (var (_, data) in parsed)
-            foreach (var key in data.Keys)
-                if (!columns.Contains(key)) columns.Add(key);
-
-        using var ms = new MemoryStream();
-        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
-        {
-            foreach (var (entry, data) in parsed)
-            {
-                var folder = entry.Id.ToString();
-
-                // Resolve each column into a display cell and (for file fields) a physical path.
-                var cells = new List<string>();
-                var filesToAdd = new List<(string Name, string Path)>();
-                foreach (var col in columns)
-                {
-                    data.TryGetValue(col, out var raw);
-                    var (cell, filePath, fileName) = ResolveExportCell(raw, canViewSensitive);
-                    cells.Add(cell);
-                    if (filePath != null) filesToAdd.Add((fileName, filePath));
-                }
-
-                // Per-entry CSV: header + this single row (mirrors the CSV export layout).
-                var header = new List<string> { "Date", "IP" };
-                header.AddRange(columns);
-                var row = new List<string>
-                {
-                    entry.CreatedUtc.ToString("u"),
-                    entry.IpAddress ?? string.Empty
-                };
-                row.AddRange(cells);
-
-                var csv = new StringBuilder();
-                csv.Append('\uFEFF'); // BOM so Excel reads UTF-8 correctly
-                csv.AppendLine(string.Join(",", header.Select(CsvCell)));
-                csv.AppendLine(string.Join(",", row.Select(CsvCell)));
-
-                WriteZipText(zip, $"{folder}/entry-{entry.Id}.csv", csv.ToString());
-
-                // Uploaded files for this entry, de-duplicated within the folder.
-                var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var (name, path) in filesToAdd)
-                {
-                    var safeName = UniqueName(usedNames, string.IsNullOrEmpty(name) ? "file" : name);
-                    try
-                    {
-                        var zipEntry = zip.CreateEntry($"{folder}/{safeName}", CompressionLevel.Optimal);
-                        using var zs = zipEntry.Open();
-                        using var fs = File.OpenRead(path);
-                        fs.CopyTo(zs);
-                    }
-                    catch (Exception ex) { logger.LogWarning(ex, "Failed to add file {Path} to export", path); }
-                }
-            }
-        }
-
-        var zipFileName = $"{SanitizeSegment(form.Alias)}-entries.zip";
-        return new EntriesExportResult(ms.ToArray(), zipFileName);
-    }
-
-    // Turns a stored value into a CSV cell plus (for file fields) its physical path.
-    // Sensitive values are masked when the caller lacks the Sensitive Data permission.
-    private (string Cell, string? FilePath, string FileName) ResolveExportCell(string? rawValue, bool canViewSensitive)
-    {
-        if (string.IsNullOrEmpty(rawValue)) return (string.Empty, null, string.Empty);
-
-        var v = rawValue;
-        if (v.StartsWith(EncryptedPrefix, StringComparison.Ordinal))
-        {
-            if (!canViewSensitive) return (MaskedValue, null, string.Empty);
-            try { v = Protector.Unprotect(v[EncryptedPrefix.Length..]); }
-            catch { return ("[decryption error]", null, string.Empty); }
-        }
-
-        if (v.StartsWith(FilePrefix, StringComparison.Ordinal))
-        {
-            if (TryResolveStoredFilePath(v, out var full, out var name))
-                return (name, File.Exists(full) ? full : null, name);
-
-            // Token unreadable: still surface the display name in the CSV.
-            var body = v[FilePrefix.Length..];
-            var sep = body.LastIndexOf('|');
-            var disp = sep < 0 ? body : body[..sep];
-            return (disp, null, disp);
-        }
-
-        return (v, null, string.Empty);
-    }
-
-    private static void WriteZipText(ZipArchive zip, string entryPath, string content)
-    {
-        var zipEntry = zip.CreateEntry(entryPath, CompressionLevel.Optimal);
-        using var stream = zipEntry.Open();
-        var bytes = Encoding.UTF8.GetBytes(content);
-        stream.Write(bytes, 0, bytes.Length);
-    }
-
-    private static string CsvCell(string? value)
-        => "\"" + (value ?? string.Empty).Replace("\"", "\"\"") + "\"";
-
-    // Ensures a file name is unique within a folder by appending " (n)" before the extension.
-    private static string UniqueName(HashSet<string> used, string name)
-    {
-        if (used.Add(name)) return name;
-        var stem = Path.GetFileNameWithoutExtension(name);
-        var ext = Path.GetExtension(name);
-        var i = 2;
-        string candidate;
-        do { candidate = $"{stem} ({i++}){ext}"; } while (!used.Add(candidate));
-        return candidate;
-    }
-
-    public EntryFileResult? GetEntryFile(int entryId, string fieldName, bool canViewSensitive = false)
-    {
-        using var scope = scopeProvider.CreateScope(autoComplete: true);
-        var entry = scope.Database.SingleOrDefault<uTProSimpleFormEntryDto>(
-            scope.SqlContext.Sql().SelectAll().From<uTProSimpleFormEntryDto>()
-                .Where<uTProSimpleFormEntryDto>(x => x.Id == entryId));
-        if (entry == null || string.IsNullOrEmpty(entry.DataJson)) return null;
-
-        var data = JsonSerializer.Deserialize<Dictionary<string, string>>(entry.DataJson, JsonOpts) ?? [];
-        if (!data.TryGetValue(fieldName, out var value) || string.IsNullOrEmpty(value)) return null;
-
-        // A file field marked "sensitive" is encrypted first. Mirror the entry-list masking:
-        // deny the download to users without the Sensitive Data permission, then peel the layer.
-        if (value.StartsWith(EncryptedPrefix, StringComparison.Ordinal))
-        {
-            if (!canViewSensitive) return null;
-            try { value = Protector.Unprotect(value[EncryptedPrefix.Length..]); }
-            catch { return null; }
-        }
-
-        if (!TryResolveStoredFilePath(value, out var fullPath, out var displayName)) return null;
-        if (!File.Exists(fullPath)) return null;
-
-        if (!ContentTypeProvider.TryGetContentType(displayName, out var contentType))
-            contentType = "application/octet-stream";
-
-        var stream = File.OpenRead(fullPath);
-        return new EntryFileResult(stream, displayName, contentType);
-    }
-
-    // Resolves a stored file-field value into a confined physical path.
-    // Handles the optional "sensitive" encryption layer and the protected path token.
-    private bool TryResolveStoredFilePath(string? value, out string fullPath, out string displayName)
-    {
-        fullPath = string.Empty;
-        displayName = string.Empty;
-        if (string.IsNullOrEmpty(value)) return false;
-
-        var v = value;
-        if (v.StartsWith(EncryptedPrefix, StringComparison.Ordinal))
-        {
-            try { v = Protector.Unprotect(v[EncryptedPrefix.Length..]); }
-            catch { return false; }
-        }
-
-        if (!v.StartsWith(FilePrefix, StringComparison.Ordinal)) return false;
-
-        var body = v[FilePrefix.Length..];
-        var sep = body.LastIndexOf('|');
-        if (sep < 0) return false;
-
-        displayName = body[..sep];
-        var token = body[(sep + 1)..];
-
-        string relativePath;
-        try { relativePath = FileTokenProtector.Unprotect(token); }
-        catch { return false; }
-
-        // Confine inside the uploads root (defence in depth against traversal,
-        // even though the path is protected/signed).
-        var root = Path.GetFullPath(FileUploadsRoot);
-        var full = Path.GetFullPath(Path.Combine(root, relativePath));
-        if (!full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-            && !full.StartsWith(root + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
-            return false;
-
-        fullPath = full;
-        return true;
-    }
-
-    // Deletes the physical files behind any file-field values in the given set.
-    // Safe to call with mixed data — non-file values are ignored.
-    private void DeleteStoredFiles(IEnumerable<string?> values)
-    {
-        foreach (var value in values)
-        {
-            if (!TryResolveStoredFilePath(value, out var fullPath, out _)) continue;
-            try { if (File.Exists(fullPath)) File.Delete(fullPath); }
-            catch (Exception ex) { logger.LogWarning(ex, "Failed to delete uploaded file {Path}", fullPath); }
-        }
-    }
-
-    // Reads the raw stored data for entries so their files can be cleaned up on delete.
-    private static IEnumerable<string?> ExtractFileValues(string? dataJson)
-    {
-        if (string.IsNullOrEmpty(dataJson)) return [];
-        var data = JsonSerializer.Deserialize<Dictionary<string, string>>(dataJson, JsonOpts);
-        return data == null ? [] : data.Values.Select(v => (string?)v);
-    }
-
-    // Flattens groups → columns → fields plus any legacy ungrouped fields.
+    // Flattens groups → columns → fields plus any legacy ungrouped fields. Shared by the
+    // submission (validation) and export partials; deserialises Groups/Fields JSON once.
     private static List<FormFieldViewModel> GetAllFormFields(uTProSimpleFormDto form)
     {
         var groups = string.IsNullOrEmpty(form.GroupsJson)
@@ -793,30 +332,5 @@ internal class uTProSimpleFormService(
         if (!string.IsNullOrEmpty(form.FieldsJson))
             all.AddRange(JsonSerializer.Deserialize<List<FormFieldViewModel>>(form.FieldsJson, JsonOpts) ?? []);
         return all;
-    }
-
-    private static bool IsExtensionAllowed(string extension, string? accept)
-    {
-        if (string.IsNullOrWhiteSpace(accept)) return true; // no restriction configured
-        var ext = extension.TrimStart('.').ToLowerInvariant();
-        if (string.IsNullOrEmpty(ext)) return false;
-        return accept.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(a => a.TrimStart('.').ToLowerInvariant())
-            .Where(a => a.Length > 0 && !a.Contains('/')) // ignore MIME patterns like "image/*"
-            .Any(a => a == ext);
-    }
-
-    private static double? ParseDouble(string? s)
-        => double.TryParse(s, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : null;
-
-    // Keep alias usable as a single, safe folder name.
-    private static string SanitizeSegment(string value)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        var cleaned = new string((value ?? string.Empty)
-            .Select(c => invalid.Contains(c) || c == '/' || c == '\\' ? '_' : c).ToArray());
-        cleaned = cleaned.Trim('.', ' ');
-        return string.IsNullOrEmpty(cleaned) ? "form" : cleaned;
     }
 }

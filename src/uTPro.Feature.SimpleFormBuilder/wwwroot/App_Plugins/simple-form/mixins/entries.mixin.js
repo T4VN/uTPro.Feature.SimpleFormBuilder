@@ -118,6 +118,17 @@ export const EntriesMixin = (Base) => class extends Base {
         await this._loadEntries();
     }
 
+    _csvCell(value) {
+        let v = (value ?? '').toString();
+        // CSV/formula-injection guard: neutralise values a spreadsheet could execute as a
+        // formula by prefixing a single quote before the normal quoting/escaping.
+        const trimmed = v.replace(/^\s+/, '');
+        if (trimmed.length && '=+-@\t\r'.indexOf(trimmed[0]) >= 0) {
+            v = "'" + v;
+        }
+        return '"' + v.replace(/"/g, '""') + '"';
+    }
+
     _exportCsv() {
         if (!this._entries.length) return;
         const allKeys = [...new Set(this._entries.flatMap(s => Object.keys(s.data || {})))];
@@ -128,9 +139,9 @@ export const EntriesMixin = (Base) => class extends Base {
             const fields = allKeys.map(k => {
                 const raw = s.data?.[k] || '';
                 const fileName = this._fileValueName(raw);
-                return '"' + (fileName || raw).replace(/"/g, '""') + '"';
+                return this._csvCell(fileName || raw);
             });
-            return ['"' + date + '"', '"' + ip + '"', ...fields].join(',');
+            return [this._csvCell(date), this._csvCell(ip), ...fields].join(',');
         });
         const csv = headers.join(',') + '\n' + rows.join('\n');
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });

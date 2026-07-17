@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Extensions;
+using uTPro.Feature.SimpleFormBuilder.Helpers;
 using uTPro.Feature.SimpleFormBuilder.Models;
 using uTPro.Feature.SimpleFormBuilder.Services;
 
@@ -29,16 +30,31 @@ public class uTProSimpleFormApiController(
         canViewSensitive = CanCurrentUserViewSensitiveData()
     });
 
-    // ── Forms (read: all users, write: admin only) ──
+    // ── Forms (forms-management permission required for both read and write) ──
 
     [HttpPost("list")]
-    public IActionResult List() => Ok(formService.GetAllForms());
+    public IActionResult List()
+    {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to view forms" });
+
+        var forms = formService.GetAllForms();
+        // Redact any secrets stored in field attributes before returning to the client.
+        FormSanitizer.SanitizeForOutput(forms);
+        return Ok(forms);
+    }
 
     [HttpPost("get")]
     public IActionResult Get([FromBody] GetFormRequest request)
     {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to view forms" });
+
         var form = formService.GetForm(request.Id);
-        return form != null ? Ok(form) : NotFound(new { message = "Form not found" });
+        if (form == null) return NotFound(new { message = "Form not found" });
+        // Redact any secrets stored in field attributes before returning to the client.
+        FormSanitizer.SanitizeForOutput(form);
+        return Ok(form);
     }
 
     [HttpPost("save")]
@@ -88,6 +104,9 @@ public class uTProSimpleFormApiController(
     [HttpPost("entries")]
     public IActionResult Entries([FromBody] EntryListRequest request)
     {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to view entries" });
+
         var canViewSensitive = CanCurrentUserViewSensitiveData();
         return Ok(formService.GetEntries(
             request.FormId, request.Skip, request.Take, canViewSensitive,
@@ -109,6 +128,9 @@ public class uTProSimpleFormApiController(
     [HttpGet("entry-file")]
     public IActionResult EntryFile([FromQuery] int entryId, [FromQuery] string fieldName)
     {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to view entry files" });
+
         // Sensitive file fields are gated by the same permission that unmasks entry data.
         var result = formService.GetEntryFile(entryId, fieldName, CanCurrentUserViewSensitiveData());
         if (result == null) return NotFound(new { message = "File not found" });
@@ -121,6 +143,9 @@ public class uTProSimpleFormApiController(
     [HttpPost("export-entries-zip")]
     public IActionResult ExportEntriesZip([FromBody] EntryListRequest request)
     {
+        if (!CanCurrentUserManageForms())
+            return Unauthorized(new { message = "You do not have permission to export entries" });
+
         var result = formService.ExportEntriesZip(
             request.FormId, CanCurrentUserViewSensitiveData(),
             request.Search, request.DateFrom, request.DateTo);
