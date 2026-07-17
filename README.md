@@ -23,13 +23,15 @@ Database-agnostic: runs on **SQL Server**, **SQLite** and **PostgreSQL** (`v2.0.
 - **Copy / paste** groups, columns and fields across forms (browser `localStorage`)
 - **Import / Export** form definitions as JSON (layout only — no entries)
 - **19 built-in field types** + a custom field type extension point (custom types can declare their own labelled settings)
-- Client-side validation with multi-language (Umbraco Dictionary) messages
+- Client-side validation with multi-language (Umbraco Dictionary) messages, backed by **server-side validation** on submit (field type / pattern / length) plus a **mass-assignment guard** so only declared form fields are stored
 - **Sensitive fields encrypted at rest** (ASP.NET Data Protection), masked in the UI
-- **File uploads** stored outside `wwwroot`, served only via an authenticated download endpoint (`v2.1.0+`); storage location configurable via `uTPro:Feature:Form:FileUploadsPath` for shared/load-balanced deployments (`v2.3.1+`)
-- Entry storage with search, date-range filters, paging, and export as **CSV** (data only) or **ZIP** (per-entry folders with data + uploaded files)
+- **Secret field attributes redacted** from public output — secrets such as a Cloudflare Turnstile `secretKey` are stripped from the public render API and the backoffice list/get responses, so only public attributes (e.g. `siteKey`) are exposed
+- **File uploads** stored outside `wwwroot`, served only via an authenticated download endpoint (`v2.1.0+`); storage location configurable via `uTPro:Feature:Form:FileUploadsPath` for shared/load-balanced deployments (`v2.3.1+`). File-upload fields without an explicit `accept` list fall back to a safe deny-list (executable/script/svg/html extensions rejected) and a default max size
+- Entry storage with search, date-range filters, paging, and export as **CSV** (data only) or **ZIP** (per-entry folders with data + uploaded files); CSV and ZIP exports **neutralize spreadsheet formula-injection** (cells starting with `=`, `+`, `-`, `@`, tab or CR are quoted as text)
 - **Form Picker** property editor (+ ready-made data type) to choose a form from content, with server-side publish validation
 - Public REST APIs for submit / render / entries (opt-in per form)
 - **Anti-spam & rate limiting** — built-in per-IP + per-form rate limit on the public submit endpoint (configurable), plus a pluggable **submission pipeline** (`IFormSubmissionHandler`) for captcha verification, custom validation, or your own gatekeepers (`v2.3.0+`)
+- Backoffice read endpoints (forms / entries / files / export) require **forms-management** (Settings-section) permission
 - Role-aware UI driven by Umbraco user groups
 
 ---
@@ -52,6 +54,35 @@ On first run it creates its tables and seeds a sample **Contact Us** form. Grant
 |---|---|---|
 | 16 | .NET 9 | `net9.0` |
 | 17 & 18 | .NET 10 | `net10.0` |
+
+---
+
+## Configuration
+
+Most settings are managed in the backoffice, but a few live under `uTPro:Feature:Form` in `appsettings.json`:
+
+- **`FileUploadsPath`** (string, optional): folder for stored upload files, kept outside `wwwroot`. A relative path resolves under `ContentRoot`; leaving it empty falls back to `<ContentRoot>/umbraco/Data/uTProSimpleFormUploads`. Point it at shared storage for load-balanced / multi-node deployments.
+- **`MaxExportEntries`** (int, default `10000`): caps how many entries a single ZIP export materialises, bounding memory use. Values `<= 0` fall back to the default.
+
+```json
+{
+  "uTPro": {
+    "Feature": {
+      "Form": {
+        "RateLimit": {
+          "Enabled": true,
+          "PermitLimit": 5,
+          "WindowSeconds": 60
+        },
+        "FileUploadsPath": "",
+        "MaxExportEntries": 10000
+      }
+    }
+  }
+}
+```
+
+See [Security & Permissions](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/security.md) for the full rate-limit options.
 
 ---
 
