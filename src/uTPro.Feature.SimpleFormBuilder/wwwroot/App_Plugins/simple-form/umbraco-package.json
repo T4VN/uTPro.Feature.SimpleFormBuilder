@@ -1,6 +1,6 @@
 {
-  "name": "uTPro.SimpleForm",
-  "version": "1.0.0",
+  "name": "uTPro Simple Form Builder",
+  "version": "3.1.0",
   "extensions": [
     {
       "type": "section",
