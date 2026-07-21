@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Api.Common.Attributes;
 using uTPro.Feature.SimpleFormBuilder.Helpers;
 using uTPro.Feature.SimpleFormBuilder.Models;
 using uTPro.Feature.SimpleFormBuilder.Services;
@@ -9,6 +10,8 @@ namespace uTPro.Feature.SimpleFormBuilder.Controllers;
 
 [ApiController]
 [Route("api/utpro/simple-form")]
+[MapToApi(ConfigureSimpleFormSwaggerGenOptions.ApiName)]
+[ApiExplorerSettings(GroupName = "Simple Form (Public)")]
 public class uTProSimpleFormSubmitController(
     IuTProSimpleFormService formService,
     IEnumerable<IFormSubmissionHandler> submissionHandlers) : ControllerBase

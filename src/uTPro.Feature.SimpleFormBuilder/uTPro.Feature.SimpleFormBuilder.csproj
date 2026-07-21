@@ -10,7 +10,7 @@
     <!-- NuGet package metadata -->
     <PackageId>uTPro.Feature.SimpleFormBuilder</PackageId>
     <Title>uTPro Simple Form Builder for Umbraco (16, 17, 18)</Title>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <Authors>T4VN</Authors>
     <Company>T4VN</Company>
     <Description>Lightweight form builder for Umbraco 16, 17 and 18 - create, manage, and render dynamic forms from the backoffice. Supports 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language, and custom field extensibility. Runs on SQL Server, SQLite and PostgreSQL.</Description>

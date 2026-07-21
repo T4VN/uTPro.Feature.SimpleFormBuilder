@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Api.Common.Attributes;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Api.Management.Routing;
 using Umbraco.Cms.Core.Models;
@@ -12,7 +13,8 @@ using uTPro.Feature.SimpleFormBuilder.Services;
 namespace uTPro.Feature.SimpleFormBuilder.Controllers;
 
 [VersionedApiBackOfficeRoute("utpro/simple-form")]
-[ApiExplorerSettings(GroupName = "uTPro Simple Form")]
+[MapToApi(ConfigureSimpleFormSwaggerGenOptions.ApiName)]
+[ApiExplorerSettings(GroupName = "Simple Form")]
 public class uTProSimpleFormApiController(
     IuTProSimpleFormService formService,
     IBackOfficeSecurityAccessor backOfficeSecurityAccessor,
