@@ -1,0 +1,75 @@
+﻿{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Category": "Editor Tools",
+  "Title": "uTPro Simple Form Builder",
+  "Description": "Lightweight form builder for Umbraco 16, 17 and 18 backoffice. Create, manage, and render dynamic forms with 19+ field types, groups/columns layout, client-side validation, sensitive data encryption, multi-language support, custom field extensibility, entry storage, secure file uploads (stored outside wwwroot, authenticated download), entry export as CSV or ZIP (data + uploaded files), and public submit/render APIs. Render any form with a single ViewComponent call. Database-agnostic: runs on SQL Server, SQLite and PostgreSQL.",
+  "AuthorDetails": {
+    "Name": "T4VN",
+    "Url": "https://t4vn.com",
+    "ImageUrl": "https://github.com/t4vn.png",
+    "SyncContributorsFromRepository": true
+  },
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-list.png",
+      "Caption": "Forms list — create, filter, edit, entries, export, delete"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-builder.png",
+      "Caption": "Visual form builder — groups, 12-column layout and fields"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/field-types.png",
+      "Caption": "19 built-in field types plus a custom field type extension point"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-settings.png",
+      "Caption": "Form settings — success message, redirect, email, opt-in APIs"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-render.png",
+      "Caption": "Rendered form on the front-end with client-side validation"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/entries.png",
+      "Caption": "Entries with search, date-range filters, paging and export as CSV or ZIP (data + uploaded files)"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/sensitive-data.png",
+      "Caption": "Entries encrypted at rest and masked when a field is Sensitive Data"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-picker.png",
+      "Caption": "Form Picker data type — restrict to specific Allowed forms"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/form-picker-content.png",
+      "Caption": "Choosing a form from a content property with the Form Picker"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/import-export.png",
+      "Caption": "Import / Export form definitions as JSON"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.SimpleFormBuilder/main/Image/Screenshots/postgresql.png",
+      "Caption": "Runs on PostgreSQL (and SQL Server / SQLite) — cross-database support"
+    }
+  ],
+  "LicenseTypes": [
+    "Free"
+  ],
+  "Tags": [
+    "form",
+    "form-builder",
+    "forms",
+    "backoffice",
+    "validation",
+    "dynamic-forms",
+    "postgresql",
+    "database"
+  ],
+  "LookingForContributors": true,
+  "PackageType": "Package",
+  "DocumentationUrl": "https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder",
+  "IssueTrackerUrl": "https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/issues"
+}
