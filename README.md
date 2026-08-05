@@ -20,6 +20,7 @@ Database-agnostic: runs on **SQL Server**, **SQLite** and **PostgreSQL** (`v2.0.
 
 - Dedicated **uTPro Form** section with a left **Forms** tree (like Dictionary)
 - Visual builder: groups → 12-column layout → fields, with live settings
+- **Conditional field visibility** (`v5.0.0+`) — show or hide fields dynamically based on another field's value (e.g. a Dropdown selection). Configure conditions per-field in the Field Settings dialog with Show/Hide action, all/any match logic, and 10 comparison operators. When the source field has predefined options, values are selectable from a dropdown
 - **Copy / paste** groups, columns and fields across forms (browser `localStorage`)
 - **Import / Export** form definitions as JSON (layout only — no entries)
 - **19 built-in field types** + a custom field type extension point (custom types can declare their own labelled settings)
@@ -33,6 +34,25 @@ Database-agnostic: runs on **SQL Server**, **SQLite** and **PostgreSQL** (`v2.0.
 - **Anti-spam & rate limiting** — built-in per-IP + per-form rate limit on the public submit endpoint (configurable), plus a pluggable **submission pipeline** (`IFormSubmissionHandler`) for captcha verification, custom validation, or your own gatekeepers (`v2.3.0+`)
 - Backoffice read endpoints (forms / entries / files / export) require **forms-management** (Settings-section) permission
 - Role-aware UI driven by Umbraco user groups
+
+---
+
+## What's New in v5.0.0
+
+**Conditional Field Visibility** — fields can now show or hide themselves at runtime based on the value of other form fields.
+
+Open any field's **Field Settings** dialog and scroll to the new **Conditions** section:
+
+1. Toggle **On** to enable conditions
+2. Choose the action: **Show** or **Hide** this field
+3. Choose the match logic: **all** (every rule must match) or **any** (at least one rule matches)
+4. Add one or more rules — each rule references another field, a comparison operator, and a target value
+
+**Operators available:** is, is not, contains, does not contain, starts with, ends with, is greater than, is less than, is empty, is not empty.
+
+When the referenced field has predefined options (Dropdown, Radio, Checkbox), the value picker renders as a **dropdown** populated with those options — no manual typing needed.
+
+**Runtime behaviour:** conditions are evaluated client-side in real time as the user fills in the form. Fields hidden by conditions are excluded from validation and are not submitted. No database migration is required — conditions are stored inside the existing JSON column.
 
 ---
 
@@ -104,6 +124,7 @@ For **PostgreSQL**, install the community provider [`Our.Umbraco.PostgreSql`](ht
 | [Rendering a Form](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/rendering.md) | ViewComponent, parameters, template resolution, overriding views, JS hooks |
 | [Form Picker](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/form-picker.md) | Choose a form from content, Allowed-forms setting, publish validation |
 | [Field Types](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/field-types.md) | Built-in types, custom field types + custom settings, FieldHelper, Star Rating example |
+| [Conditions](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/conditions.md) | Show/hide fields based on another field's value, operators, runtime behaviour |
 | [Public APIs & Import/Export](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/public-apis.md) | submit / render / entries endpoints, submission pipeline (`IFormSubmissionHandler`), JSON import/export |
 | [Security & Permissions](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/security.md) | Roles, sensitive-data encryption (encode/decode), rate limiting, test accounts |
 | [Reference](https://github.com/T4VN/uTPro.Feature.SimpleFormBuilder/blob/main/docs/reference.md) | Project structure, static assets, database tables, migrations |
