@@ -1,6 +1,8 @@
+> **Rendered documentation:** [docs.utpro.dev](https://docs.utpro.dev/uTPro.Feature.SimpleFormBuilder/) is the canonical, always-current home of this page.
+
 # Field Types
 
-[← Back to README](../README.md)
+[â† Back to README](../README.md)
 
 ![Field type picker](../Image/Screenshots/field-types.png)
 
@@ -41,13 +43,13 @@ The `file` type renders a file input with two optional settings in the field edi
 | **Accept** | `accept` | Comma-separated allowed extensions (e.g. `.pdf,.jpg`). Enforced client-side and server-side. |
 | **Max MB** | `maxSize` | Maximum file size in megabytes. Enforced client-side and server-side. |
 
-Uploaded files are sent together with the submission in a single request and are only persisted once the entry validates and is stored — they are saved **outside `wwwroot`** and never served statically. In the backoffice entries list/detail the field shows a download button; the file streams through an authenticated endpoint. If the file field is also marked **Sensitive Data**, it is masked and blocked from download for users without the Sensitive Data permission. See [Public APIs](public-apis.md) and [Security & Permissions](security.md) for details.
+Uploaded files are sent together with the submission in a single request and are only persisted once the entry validates and is stored â€” they are saved **outside `wwwroot`** and never served statically. In the backoffice entries list/detail the field shows a download button; the file streams through an authenticated endpoint. If the file field is also marked **Sensitive Data**, it is masked and blocked from download for users without the Sensitive Data permission. See [Public APIs](public-apis.md) and [Security & Permissions](security.md) for details.
 
 ## Adding a Custom Field Type
 
-It takes two steps — **no package edits required**.
+It takes two steps â€” **no package edits required**.
 
-### Step 1 — Create a Razor partial
+### Step 1 â€” Create a Razor partial
 
 Create a `.cshtml` file named after your field type:
 
@@ -73,7 +75,7 @@ Minimal template:
 
 uTPro Form auto-detects the new file. No changes to `Default.cshtml` or any config.
 
-### Step 2 — Register it in the backoffice picker
+### Step 2 â€” Register it in the backoffice picker
 
 From your own site, register the type in a composer:
 
@@ -91,9 +93,9 @@ public class MyFormFieldsComposer : IComposer
 
 Register several at once with `builder.AdduTProSimpleFormFieldTypes(...)`. Build and restart. Your new field type now appears in the form builder, merged with the built-in ones.
 
-### Step 3 (optional) — Add custom settings
+### Step 3 (optional) â€” Add custom settings
 
-`v2.2.0+` — A custom type can declare its own settings. The form builder renders a **labelled input for each one** in the field's settings dialog (the same custom area the built-in Time Picker uses for its Min/Max), and saves the entered value into the field's `Attributes` dictionary — no package edits required.
+`v2.2.0+` â€” A custom type can declare its own settings. The form builder renders a **labelled input for each one** in the field's settings dialog (the same custom area the built-in Time Picker uses for its Min/Max), and saves the entered value into the field's `Attributes` dictionary â€” no package edits required.
 
 Declare them by passing `SimpleFormFieldAttribute` entries when registering:
 
@@ -110,7 +112,7 @@ builder.AdduTProSimpleFormFieldType("star-rating", "Star Rating",
 | `key` | Key the value is stored under in the field's `Attributes` (read it in the partial with `h.Attr("key")`). |
 | `label` | Label shown next to the input in the builder. |
 | `placeholder` *(optional)* | Placeholder text for the input. |
-| `inputType` *(optional)* | HTML input type — e.g. `text` (default), `number`, `password`. |
+| `inputType` *(optional)* | HTML input type â€” e.g. `text` (default), `number`, `password`. |
 
 Read the value back in your partial via `FieldHelper`:
 
@@ -122,7 +124,7 @@ Read the value back in your partial via `FieldHelper`:
 > Leave the standard **Default Value** / **Placeholder** boxes for their usual meaning and keep
 > type-specific settings in dedicated attributes.
 
-## FieldHelper — toolkit for field partials
+## FieldHelper â€” toolkit for field partials
 
 Every field partial can use `FieldHelper` to avoid repetitive HTML:
 
@@ -155,7 +157,7 @@ Wrap an Umbraco Dictionary key in double curly braces:
 
 ## Full example: Star Rating field
 
-**Step 1** — Create `Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml`:
+**Step 1** â€” Create `Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml`:
 
 ```razor
 @using uTPro.Feature.SimpleFormBuilder.Helpers
@@ -172,14 +174,14 @@ Wrap an Umbraco Dictionary key in double curly braces:
         <label>
             <input type="radio" name="@h.Name" value="@i"
                    @h.RequiredAttr() @h.DataMsgAttr() />
-            ⭐
+            â­
         </label>
     }
 </div>
 @h.Error()
 ```
 
-**Step 2** — Register the type from your site in a composer. Declare a `max` setting so editors can choose how many stars to show (rendered as a labelled input in the builder, `v2.2.0+`):
+**Step 2** â€” Register the type from your site in a composer. Declare a `max` setting so editors can choose how many stars to show (rendered as a labelled input in the builder, `v2.2.0+`):
 
 ```csharp
 using Umbraco.Cms.Core.Composing;
@@ -195,7 +197,7 @@ public class StarRatingFieldComposer : IComposer
 }
 ```
 
-Done. The field shows up in the builder — with a **Max Stars** input — and renders with stars on the front-end (the partial reads it via `h.Attr("max", "5")`).
+Done. The field shows up in the builder â€” with a **Max Stars** input â€” and renders with stars on the front-end (the partial reads it via `h.Attr("max", "5")`).
 
 > A complete, runnable version of this example ships in the bundled **TestSite**
 > (`Examples/StarRatingFieldComposer.cs` + `Views/Partials/uTProSimpleForm/Fields/star-rating.cshtml`),

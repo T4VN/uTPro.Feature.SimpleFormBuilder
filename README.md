@@ -1,5 +1,7 @@
 # uTPro Simple Form Builder for Umbraco
 
+**Documentation:** <https://docs.utpro.dev/uTPro.Feature.SimpleFormBuilder/>
+
 A lightweight form builder — create and manage dynamic forms directly from the Umbraco backoffice with no code required for everyday use. Render any form on the front-end with a single line, and extend it with custom field types without touching the package.
 
 Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
@@ -29,6 +31,7 @@ Database-agnostic: runs on **SQL Server**, **SQLite** and **PostgreSQL** (`v2.0.
 - **Secret field attributes redacted** from public output — secrets such as a Cloudflare Turnstile `secretKey` are stripped from the public render API and the backoffice list/get responses, so only public attributes (e.g. `siteKey`) are exposed
 - **File uploads** stored outside `wwwroot`, served only via an authenticated download endpoint (`v2.1.0+`); storage location configurable via `uTPro:Feature:Form:FileUploadsPath` for shared/load-balanced deployments (`v2.3.1+`). File-upload fields without an explicit `accept` list fall back to a safe deny-list (executable/script/svg/html extensions rejected) and a default max size
 - Entry storage with search, date-range filters, paging, and export as **CSV** (data only) or **ZIP** (per-entry folders with data + uploaded files); CSV and ZIP exports **neutralize spreadsheet formula-injection** (cells starting with `=`, `+`, `-`, `@`, tab or CR are quoted as text)
+- **Consistent entry counts** (`v5.1.0+`) — the entries toolbar badge always reports the form's all-time count (matching the edit screen) while the table honours the active search/date filters; a new **All time** quick-range option lists every submission in one click. The entries APIs return `totalAll` alongside `total`
 - **Form Picker** property editor (+ ready-made data type) to choose a form from content, with server-side publish validation
 - Public REST APIs for submit / render / entries (opt-in per form)
 - **Anti-spam & rate limiting** — built-in per-IP + per-form rate limit on the public submit endpoint (configurable), plus a pluggable **submission pipeline** (`IFormSubmissionHandler`) for captcha verification, custom validation, or your own gatekeepers (`v2.3.0+`)

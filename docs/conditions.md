@@ -1,8 +1,10 @@
+> **Rendered documentation:** [docs.utpro.dev](https://docs.utpro.dev/uTPro.Feature.SimpleFormBuilder/) is the canonical, always-current home of this page.
+
 # Conditional Field Visibility
 
 *Available since v5.0.0*
 
-Fields can show or hide themselves at runtime based on the value of other fields in the same form. This is useful for branching forms — for example, showing different help text or follow-up inputs depending on a Dropdown selection.
+Fields can show or hide themselves at runtime based on the value of other fields in the same form. This is useful for branching forms â€” for example, showing different help text or follow-up inputs depending on a Dropdown selection.
 
 ---
 
@@ -12,15 +14,15 @@ Fields can show or hide themselves at runtime based on the value of other fields
 2. Scroll to the **Conditions** section at the bottom of the dialog.
 3. Toggle **On** to enable conditions.
 4. Choose the **action**:
-   - **Show** — the field is hidden by default and becomes visible when the conditions match.
-   - **Hide** — the field is visible by default and becomes hidden when the conditions match.
+   - **Show** â€” the field is hidden by default and becomes visible when the conditions match.
+   - **Hide** â€” the field is visible by default and becomes hidden when the conditions match.
 5. Choose the **match logic**:
-   - **all** — every rule must match for the action to trigger.
-   - **any** — at least one rule matching is enough.
+   - **all** â€” every rule must match for the action to trigger.
+   - **any** â€” at least one rule matching is enough.
 6. Add one or more **rules**. Each rule consists of:
-   - **Field** — the name of another field in the form whose value is evaluated.
-   - **Operator** — how to compare the field's value to the target.
-   - **Value** — the target value (or omitted for `is empty` / `is not empty`).
+   - **Field** â€” the name of another field in the form whose value is evaluated.
+   - **Operator** â€” how to compare the field's value to the target.
+   - **Value** â€” the target value (or omitted for `is empty` / `is not empty`).
 
 ### Operators
 
@@ -39,7 +41,7 @@ Fields can show or hide themselves at runtime based on the value of other fields
 
 ### Smart value picker
 
-When the referenced field has predefined options (Dropdown, Radio, or Checkbox field types), the **Value** column renders as a dropdown populated with those options — no manual typing required. For fields without options (text, number, email, etc.), a free-text input is shown instead.
+When the referenced field has predefined options (Dropdown, Radio, or Checkbox field types), the **Value** column renders as a dropdown populated with those options â€” no manual typing required. For fields without options (text, number, email, etc.), a free-text input is shown instead.
 
 ---
 
@@ -50,8 +52,8 @@ Conditions are evaluated **client-side** in real time:
 - The form emits a `data-conditions` attribute (JSON) on each conditional field wrapper.
 - The bundled `simple-form.js` listens for `change` and `input` events on referenced fields and re-evaluates all conditions immediately.
 - Hidden fields are set to `display: none` and marked with `data-cond-disabled`, which causes them to be:
-  - **Skipped during validation** — a required field that is currently hidden will not block submission.
-  - **Excluded from the submitted data** — the value is not sent to the server.
+  - **Skipped during validation** â€” a required field that is currently hidden will not block submission.
+  - **Excluded from the submitted data** â€” the value is not sent to the server.
 
 ### Initial state
 
@@ -61,7 +63,7 @@ On page load, conditions are evaluated once so the form starts in the correct st
 
 ## Data model
 
-Conditions are stored as part of the field's JSON inside the existing `GroupsJson` column — **no database migration is required**.
+Conditions are stored as part of the field's JSON inside the existing `GroupsJson` column â€” **no database migration is required**.
 
 ```jsonc
 // Inside a field object:

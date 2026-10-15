@@ -1,6 +1,8 @@
+> **Rendered documentation:** [docs.utpro.dev](https://docs.utpro.dev/uTPro.Feature.SimpleFormBuilder/) is the canonical, always-current home of this page.
+
 # Getting Started
 
-[← Back to README](../README.md)
+[â† Back to README](../README.md)
 
 ## Install via NuGet
 
@@ -29,19 +31,19 @@ The package multi-targets both, so the correct dependencies are restored automat
 
 After install, a new **uTPro Form** item appears in the top (blue) section menu.
 
-> **Access:** custom sections are governed by user-group permissions. Grant the **uTPro Form** section to a user group under **Users → User groups → _group_ → Sections → Choose → uTPro Form**, then reload the backoffice. See [Security & Permissions](security.md).
+> **Access:** custom sections are governed by user-group permissions. Grant the **uTPro Form** section to a user group under **Users â†’ User groups â†’ _group_ â†’ Sections â†’ Choose â†’ uTPro Form**, then reload the backoffice. See [Security & Permissions](security.md).
 
 The section uses a familiar two-pane layout:
 
 ![Forms list](../Image/Screenshots/form-list.png)
 
-- **Left panel (Forms tree)** — lists all forms. A **+** button creates a new form, and a **⋯ (Options)** menu offers:
-  - **Reload** — refresh the list
-  - **Create** — new form
-  - **Import** — create a form from an exported JSON file
+- **Left panel (Forms tree)** â€” lists all forms. A **+** button creates a new form, and a **â‹¯ (Options)** menu offers:
+  - **Reload** â€” refresh the list
+  - **Create** â€” new form
+  - **Import** â€” create a form from an exported JSON file
 
-  Each form row also has a **⋯** menu (Edit / Entries / Export / Delete).
-- **Main area** — a **Create** button, an **Import** button, a **filter** box, and the forms table (Name, Alias, Fields, Status, Actions). Selecting a form opens it; users without edit rights jump straight to its **Entries**.
+  Each form row also has a **â‹¯** menu (Edit / Entries / Export / Delete).
+- **Main area** â€” a **Create** button, an **Import** button, a **filter** box, and the forms table (Name, Alias, Fields, Status, Actions). Selecting a form opens it; users without edit rights jump straight to its **Entries**.
 
 ## Building your first form
 
@@ -62,8 +64,8 @@ Your form is ready to [render on the front-end](rendering.md). Submissions land 
 
 ## Copy / Paste (Groups, Columns, Fields)
 
-The builder can copy a whole **group**, **column** or **field** and paste it elsewhere — even into a different form.
+The builder can copy a whole **group**, **column** or **field** and paste it elsewhere â€” even into a different form.
 
 - Copy buttons sit on each group/column/field; **Paste** buttons appear only when the clipboard holds a matching item.
 - Backed by the browser's **`localStorage`**, so the copied item survives navigating between forms and even a full page reload. Copying a different item type swaps what the Paste buttons offer.
-- On paste, all internal IDs are regenerated and colliding field `name`s are de-duped (`_copy`, `_copy2`, …) so submissions never clash.
+- On paste, all internal IDs are regenerated and colliding field `name`s are de-duped (`_copy`, `_copy2`, â€¦) so submissions never clash.

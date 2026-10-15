@@ -1,6 +1,8 @@
+> **Rendered documentation:** [docs.utpro.dev](https://docs.utpro.dev/uTPro.Feature.SimpleFormBuilder/) is the canonical, always-current home of this page.
+
 # Rendering a Form
 
-[← Back to README](../README.md)
+[â† Back to README](../README.md)
 
 Drop this into any Razor view or block component:
 
@@ -27,9 +29,9 @@ The `alias` matches the form you created in the **uTPro Form** section.
 
 ## Template resolution order
 
-1. `Views/Partials/uTProSimpleForm/{template}.cshtml` — if a `template` parameter was passed
-2. `Views/Partials/uTProSimpleForm/{alias}.cshtml` — a view named after the form alias
-3. `Views/Partials/uTProSimpleForm/Default.cshtml` — the built-in default
+1. `Views/Partials/uTProSimpleForm/{template}.cshtml` â€” if a `template` parameter was passed
+2. `Views/Partials/uTProSimpleForm/{alias}.cshtml` â€” a view named after the form alias
+3. `Views/Partials/uTProSimpleForm/Default.cshtml` â€” the built-in default
 
 To customize the layout for a specific form, create a file matching its alias. No config changes needed.
 
@@ -40,10 +42,10 @@ When installed via NuGet, all Razor views are compiled into the package DLL. To 
 ```
 YourWebProject/
   Views/Partials/uTProSimpleForm/
-    Default.cshtml                  ← overrides the form layout
+    Default.cshtml                  â† overrides the form layout
     Fields/
-      textarea.cshtml               ← overrides just the textarea field
-      star-rating.cshtml            ← adds a brand new field type
+      textarea.cshtml               â† overrides just the textarea field
+      star-rating.cshtml            â† adds a brand new field type
 ```
 
 ASP.NET Core picks up local files over the ones in the package. No configuration needed.
@@ -67,13 +69,13 @@ Supported fields:
 | Step divider | its `title` |
 | Content block (`div`) | any `{{ }}` tokens inside the raw HTML |
 
-Example — enter this as a field label in the form builder:
+Example â€” enter this as a field label in the form builder:
 
 ```
 {{ ContactForm.FullName }}
 ```
 
-Then create a Dictionary item `ContactForm.FullName` in Umbraco (**Settings → Dictionary**) with a value per language (e.g. `Full name` / `Họ và tên`). The label renders in the visitor's culture automatically.
+Then create a Dictionary item `ContactForm.FullName` in Umbraco (**Settings â†’ Dictionary**) with a value per language (e.g. `Full name` / `Há» vÃ  tÃªn`). The label renders in the visitor's culture automatically.
 
 A single string may contain multiple tokens and mix static text:
 
@@ -117,7 +119,7 @@ window.__uTProFormAfterSubmit = function (alias, success, result) {
 
 ## Styling / CSS classes
 
-The rendered form uses the `uTProForm` class prefix so its styles never collide with the host site. The bundled stylesheet (`~/uTPro/simple-form/css/simple-form.css`) targets these classes — override them in your own CSS to restyle the form:
+The rendered form uses the `uTProForm` class prefix so its styles never collide with the host site. The bundled stylesheet (`~/uTPro/simple-form/css/simple-form.css`) targets these classes â€” override them in your own CSS to restyle the form:
 
 | Class | Element |
 |---|---|
